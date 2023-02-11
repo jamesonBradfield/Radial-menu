@@ -10,7 +10,15 @@
 #Include Gdip_All.ahk
 PosX := 0
 PosY := 0
+ReturnColor := 0x00FF00 ; green
+defColor := [0xAA0000,0x00AA00,0x0000AA]
+;#region InputSection
 ^XButton1:: Reload
+#mButton::
+{
+    ClickPosition()
+    OpenWindowManagementRadial()
+}
 
 +mButton::
 {
@@ -35,6 +43,7 @@ ClickPosition(*)
     MouseGetPos(&PosX, &PosY)
     return
 }
+;#endregion
 
 ;this is just the basic way of creating radials
 OpenBaseRadial(*) {
@@ -48,15 +57,12 @@ OpenBaseRadial(*) {
         case "Open App": OpenAppRadial()
         case "Context Menu": CheckContext("Context Menu")
         case "Windows": OpenWindowManagementRadial()
-        case "Change menu color": OpenColorMenu()
+        case "Settings": OpenSettingsMenu()
         case "Plugins": CheckContext("Plugins")
         case "Close":    ;do nothing
         default:
             MsgBox(Result)
     }
-}
-OpenColorMenu() {
-    
 }
 CreateBaseRadial(*) {
     GMenu := Radial_Menu()
@@ -65,7 +71,7 @@ CreateBaseRadial(*) {
     ;when this key is pressed the radial section will move to its second "Option" Syntax below
     GMenu.SetKeySpecial("Ctrl")
     ;RadialMenuName.Add2("OnSelectString", "SectionIcon", sectionNumber)
-
+    
     ;GMenu.Add("", "", 1)
     ;GMenu.Add("", "", 2)
     ;GMenu.Add2("", "", 2)
@@ -76,12 +82,138 @@ CreateBaseRadial(*) {
     ;GMenu.Add2("", "Images/fbcp_asm_image.gif", 5)
     ;GMenu.Add("", "", 6)
     GMenu.Add("Close", "Images\close.png", 4)
-    GMenu.Add2("Change menu color", "Images\settingsIcon.png", 4)
+    GMenu.Add2("Settings", "Images\settingsIcon.png", 4)
     GMenu.ResetRadialAlpha()
     ;GMenu.Add("", "", 8)
     Return Result := GMenu.Show()
 }
+OpenSettingsMenu(*) {
+    global PosX, PosY
+    MouseMove(PosX, PosY, 0)
+    Result := CreateSettingsRadial()
+    switch Result
+    {
+        case "Color Menu": OpenColorMenu()
+        case "Back": OpenBaseRadial()    ;do nothing
+        default:
+            MsgBox(Result)
+    }
+}
+CreateSettingsRadial(*){
+    GMenu := Radial_Menu()
+    GMenu.SetRadialColors("2B3D55","334966","121922","000000")
+    GMenu.SetSections("4")
+    ;when this key is pressed the radial section will move to its second "Option" Syntax below
+    GMenu.SetKeySpecial("Ctrl")
+    ;RadialMenuName.Add2("OnSelectString", "SectionIcon", sectionNumber)
+    
+    ;GMenu.Add("", "", 1)
+    ;GMenu.Add("", "", 2)
+    ;GMenu.Add2("", "", 2)
+    GMenu.Add("Color Menu", "Images/pallette.png", 1)
+    GMenu.Add("", "", 2)
+    GMenu.Add2("", "", 2)
+    GMenu.Add("", "", 3)
+    ;GMenu.Add2("", "Images/fbcp_asm_image.gif", 5)
+    ;GMenu.Add("", "", 6)
+    GMenu.Add("", "", 4)
+    GMenu.Add2("", "", 4)
+    GMenu.ResetRadialAlpha()
+    ;GMenu.Add("", "", 8)
+    Return Result := GMenu.Show()
+}
+OpenColorMenu() {
+    global defColor,ReturnColor
+    ReturnColor := ColorSelect(0,WinGetID("A"), &defColor, 0)
+    colorList := ""
+    For k, v in defColor ; if user changes Custom Colors, they will be stored in defColor array
+        If v
+            colorList .= "Color: " Format("0x{:06X}", v) "`r`n"
+    SetColorValues(colorList)
+}
+SetColorValues(colorList) {
+    colorList := StrSplit(colorList, "`n")
+    colorList.RemoveAt(colorList.Length)
+    loop colorList.Length {
+        MsgBox(colorList[A_Index])
+    }
+}
+;#region colorSelect
+; AHK v2
+; originally posted by maestrith 
+; https://autohotkey.com/board/topic/94083-ahk-11-font-and-color-dialogs/
+; ===============================================================
+; END Example
+; ===============================================================
 
+; =============================================================================================
+; Parameters
+; =============================================================================================
+; Color           = Start color (0 = black) - Format = 0xRRGGBB
+; hwnd            = Parent window
+; custColorObj    = Array() to load/save custom colors, must be &VarRef
+; disp            = 1=full / 0=basic ... full displays custom colors panel, basic does not
+; =============================================================================================
+; All params are optional.  With no hwnd the dialog will show at top left of screen.  Use an
+; object serializer (like JSON) to save/load custom colors to/from disk.
+; =============================================================================================
+
+ColorSelect(Color := 0, hwnd := 0, &custColorObj := "",disp:=false) {
+    Static p := A_PtrSize
+    disp := disp ? 0x3 : 0x1 ; init disp / 0x3 = full panel / 0x1 = basic panel
+    
+    If (custColorObj.Length > 16)
+        throw Error("Too many custom colors.  The maximum allowed values is 16.")
+    
+    Loop (16 - custColorObj.Length)
+        custColorObj.Push(0) ; fill out custColorObj to 16 values
+    
+    CUSTOM := Buffer(16 * 4, 0) ; init custom colors obj
+    CHOOSECOLOR := Buffer((p=4)?36:72,0) ; init dialog
+    
+    If (IsObject(custColorObj)) {
+        Loop 16 {
+            custColor := RGB_BGR(custColorObj[A_Index])
+            NumPut "UInt", custColor, CUSTOM, (A_Index-1) * 4
+        }
+    }
+    
+    NumPut "UInt", CHOOSECOLOR.size, CHOOSECOLOR, 0             ; lStructSize
+    NumPut "UPtr", hwnd,             CHOOSECOLOR, p             ; hwndOwner
+    NumPut "UInt", RGB_BGR(color),   CHOOSECOLOR, 3 * p         ; rgbResult
+    NumPut "UPtr", CUSTOM.ptr,       CHOOSECOLOR, 4 * p         ; lpCustColors
+    NumPut "UInt", disp,             CHOOSECOLOR, 5 * p         ; Flags
+    
+    if !DllCall("comdlg32\ChooseColor", "UPtr", CHOOSECOLOR.ptr, "UInt")
+        return -1
+    
+    custColorObj := []
+    Loop 16 {
+        newCustCol := NumGet(CUSTOM, (A_Index-1) * 4, "UInt")
+        custColorObj.InsertAt(A_Index, RGB_BGR(newCustCol))
+    }
+    
+    Color := NumGet(CHOOSECOLOR, 3 * A_PtrSize, "UInt")
+    return Format("0x{:06X}",RGB_BGR(color))
+    
+    RGB_BGR(c) {
+        return ((c & 0xFF) << 16 | c & 0xFF00 | c >> 16)
+    }
+}
+
+; typedef struct tagCHOOSECOLORW {  offset      size    (x86/x64)
+  ; DWORD        lStructSize;       |0      |   4
+  ; HWND         hwndOwner;         |4 / 8  |   8 /16
+  ; HWND         hInstance;         |8 /16  |   12/24
+  ; COLORREF     rgbResult;         |12/24  |   16/28
+  ; COLORREF     *lpCustColors;     |16/28  |   20/32
+  ; DWORD        Flags;             |20/32  |   24/36
+  ; LPARAM       lCustData;         |24/40  |   28/48 <-- padding for x64
+  ; LPCCHOOKPROC lpfnHook;          |28/48  |   32/56
+  ; LPCWSTR      lpTemplateName;    |32/56  |   36/64
+  ; LPEDITMENU   lpEditInfo;        |36/64  |   40/72
+; } CHOOSECOLORW, *LPCHOOSECOLORW;
+;#endregion
 OpenAppRadial(*) {
     global PosX, PosY
     MouseMove(PosX, PosY)
@@ -683,18 +815,21 @@ Class Radial_Menu {
                         Gdip_TextToGraphics(G, Section.Name, "vCenter x" This.Sect.%A_Index%.X_Bitmap - 20 + 8 " y" This.Sect.%A_Index%.Y_Bitmap - 20 + 8, , 40, 40)
                     }
                 }
-                if (This.RadialAlpha != 255) {
-                    loop 255 {
-                        UpdateLayeredWindow(hwnd1, hdc, X_Gui, Y_Gui, Width, Height, This.RadialAlpha)
-                        This.RadialAlpha++
-                        if (mod(This.RadialAlpha, 16) = 0) {
-                            Sleep(1)
-                        }
-                    }                    
-                }
                 ; Update the specified window we have created (hwnd1) with a handle to our bitmap (hdc), specifying the x,y,w,h we want it positioned on our screen
                 ; So this will position our gui at (0,0) with the Width and Height specified earlier
                 ;figured out alpha but now we need to find out how to make it only fade in
+                if (This.RadialAlpha != 255) {
+                    loop 255 {
+                        Section_Mouse := RM_GetSection(This.Sections, inner_Radius, PosX, PosY)
+                        UpdateLayeredWindow(hwnd1, hdc, X_Gui, Y_Gui, Width, Height, This.RadialAlpha)
+                        This.RadialAlpha++
+                        if (mod(This.RadialAlpha, 8) = 0) {
+                            Sleep(1)
+                        }
+
+                    }
+                }
+                UpdateLayeredWindow(hwnd1, hdc, X_Gui, Y_Gui, Width, Height)
                 SelectObject(hdc, obm)    ; Select the object back into the hdc
                 DeleteObject(hbm)    ; Now the bitmap may be deleted
                 DeleteDC(hdc)    ; Also the device context related to the bitmap may be deleted

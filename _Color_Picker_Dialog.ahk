@@ -25,7 +25,7 @@ choose_event(ctl,info) {
     hwnd := ctl.gui.hwnd ; grab hwnd
     cc := "0x" ctl.gui.BackColor ; pre-select color from gui background (optional)
     
-    cc := ColorSelect(cc,hwnd,&defColor,0) ; specifying start color, parent window, starting custom colors, and basic display
+    cc := ColorSelect(0,hwnd,&defColor,0) ; specifying start color, parent window, starting custom colors, and basic display
     
     If (cc = -1)
         return
