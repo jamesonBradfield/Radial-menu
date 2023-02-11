@@ -408,12 +408,16 @@ Class Radial_Menu {
         This.ColorLineBackGround := "334966"
         This.ColorSelected := "121922"
         This.ColorLineSelected := "000000"
+        This.ShowSfxPath := "sfx\219069__annabloom__click1.wav"
     }
     SetRadialColors(ColorBackGround, ColorLineBackGround, ColorSelected, ColorLineSelected) {
         This.ColorBackGround := ColorBackGround
         This.ColorLineBackGround := ColorLineBackGround
         This.ColorSelected := ColorSelected
         This.ColorLineSelected := ColorLineSelected
+    }
+    SetShowClick(ShowSfxPath) {
+        This.ShowSfxPath := ShowSfxPath
     }
     ;This is exactly what it looks like just a function to pass data into the class
     SetSections(Sections) {
@@ -465,10 +469,12 @@ Class Radial_Menu {
         CoordMode "Mouse", "Screen"
         MouseGetPos(&PosX, &PosY)
         WinGetPos(&X_Win, &Y_Win, , , "A")
-        R_1 := 80
-        R_2 := R_1 * 0.35
+        SoundPlay(This.ShowSfxPath)
+        outer_Radius := 80
+        inner_Radius := outer_Radius * 0.34
         Offset := 2
-        R_3 := R_1 + Offset * 2 + 10
+        ;not sure what R_3 is
+        R_3 := outer_Radius + Offset * 2 + 10
 
         X_Gui := PosX - R_3
         Y_Gui := PosY - R_3
@@ -494,16 +500,11 @@ Class Radial_Menu {
 
         ; Create a layered window (+E0x80000 : must be used for UpdateLayeredWindow to work!) that is always on top (+AlwaysOnTop), has no taskbar entry or caption
         Gui_Radial_Menu := Gui("-Caption +E0x80000 +LastFound +AlwaysOnTop +ToolWindow +OwnDialogs")
-
         ; Show the window
         Gui_Radial_Menu.Title := "RM_Menu"
-        Gui_Radial_Menu.Show("NA x" . X_Gui . " y" . Y_Gui . " w" . Width_Gui . " h" . Height_Gui)
-        ; Get a handle to this window we have created in order to update it later
+        Gui_Radial_Menu.Show("NA x" . X_Gui . " y" . Y_Gui . " w" . Width_Gui . " h" . Height_Gui )
         hwnd1 := WinExist()
-        ;ColorBackGround := "FCFCFC"
-        ;ColorLineBackGround := "C6DFFC"
-        ;ColorSelected := "C6DFFC"
-        ;ColorLineSelected := "F5E5D6"
+        ; Get a handle to this window we have created in order to update it later
 
         Loop This.Sections {    ;Setting Bitmap images of sections
 
@@ -537,11 +538,11 @@ Class Radial_Menu {
         loop This.Sections {    ;Calculating Section Points
             SectionAngle := 2 * 3.141592653589793 / This.Sections * (A_Index - 1)
 
-            This.Sect.%A_Index%.X_Bitmap := R_3 + (R_1 - 30) * cos(SectionAngle) - 8
-            This.Sect.%A_Index%.Y_Bitmap := R_3 + (R_1 - 30) * sin(SectionAngle) - 8
+            This.Sect.%A_Index%.X_Bitmap := R_3 + (outer_Radius-20) * cos(SectionAngle) - 8
+            This.Sect.%A_Index%.Y_Bitmap := R_3 + (outer_Radius-20) * sin(SectionAngle) - 8
 
-            This.Sect.%A_Index%.PointsA := Gdip_GetPointsSection(R_3, R_3, R_1 + Offset * 2 + 10, R_1 + Offset * 2, This.Sections, Offset, A_Index)
-            This.Sect.%A_Index%.Points := Gdip_GetPointsSection(R_3, R_3, R_1, R_2, This.Sections, Offset, A_Index)
+            This.Sect.%A_Index%.PointsA := Gdip_GetPointsSection(R_3, R_3, outer_Radius + Offset * 2 + 10, outer_Radius + Offset * 2, This.Sections, Offset, A_Index)
+            This.Sect.%A_Index%.Points := Gdip_GetPointsSection(R_3, R_3, outer_Radius, inner_Radius, This.Sections, Offset, A_Index)
         }
 
         ; Setting brushes and Pens
@@ -554,13 +555,13 @@ Class Radial_Menu {
         hdc := CreateCompatibleDC()
 
         G := Gdip_GraphicsFromHDC(hdc)
-        Gdip_SetSmoothingMode(G, 4)
+        Gdip_SetSmoothingMode(G, 2)
 
         RM_KeyState_D := 0
         Section_Mouse_Prev := -1
         X_Mouse_P := -1
         Y_Mouse_P := -1
-        Gdip_FillEllipse(G, pBrushC, R_3 - R_1, R_3 - R_1, 2 * R_1, 2 * R_1)
+        Gdip_FillEllipse(G, pBrushC, R_3 - outer_Radius, R_3 - outer_Radius, 2 * outer_Radius, 2 * outer_Radius)
         loop {
             RM_KeyState := GetKeyState(This.RM_Key, "P")
             RM_KeyState2 := GetKeyState(This.RM_Key2, "P")
@@ -574,7 +575,7 @@ Class Radial_Menu {
             ;if button isn't pressed but it was last loop do this
             if (RM_KeyState = 0 and RM_KeyState_D = 1) {
                 ;get section mouse is over
-                Section_Mouse := RM_GetSection(This.Sections, R_2, PosX, PosY)
+                Section_Mouse := RM_GetSection(This.Sections, inner_Radius, PosX, PosY)
                 ;if name exists set sectionName to that name if it doesn't set sectName to 0
                 if (HasProp(This.Sect.%Section_Mouse%, "Name"))
                 {
@@ -590,7 +591,7 @@ Class Radial_Menu {
             }
             if (GetKeyState("LButton")) {
 
-                Section_Mouse := RM_GetSection(This.Sections, R_2, PosX, PosY)
+                Section_Mouse := RM_GetSection(This.Sections, inner_Radius, PosX, PosY)
                 SectName := Section_Mouse = 0 ? "" : HasProp(This.Sect.%Section_Mouse%, "Name") ? This.Sect.%Section_Mouse%.Name : ""
                 break
             }
@@ -605,9 +606,9 @@ Class Radial_Menu {
             Y_Rel := Y_Mouse - PosY
             Center_Distance := Sqrt(X_Rel * X_Rel + Y_Rel * Y_Rel)
 
-            Section_Mouse := RM_GetSection(This.Sections, R_2, PosX, PosY)
+            Section_Mouse := RM_GetSection(This.Sections, inner_Radius, PosX, PosY)
 
-            if (Center_Distance > R_1) {
+            if (Center_Distance > outer_Radius) {
                 break
             }
             if (Section_Mouse = 0 or Section_Mouse = "") {
@@ -643,7 +644,7 @@ Class Radial_Menu {
 
                 ; Set the smoothing mode to antialias = 4 to make shapes appear smother (only used for vector drawing and filling)
                 Gdip_SetSmoothingMode(G, 4)
-                Gdip_FillEllipse(G, pBrushC, R_3 - R_1, R_3 - R_1, 2 * R_1, 2 * R_1)
+                Gdip_FillEllipse(G, pBrushC, R_3 - outer_Radius, R_3 - outer_Radius, 2 * outer_Radius, 2 * outer_Radius)
 
                 loop This.Sections {
                     Section := This.Sect.%A_Index%
@@ -671,12 +672,27 @@ Class Radial_Menu {
                 }
                 ; Update the specified window we have created (hwnd1) with a handle to our bitmap (hdc), specifying the x,y,w,h we want it positioned on our screen
                 ; So this will position our gui at (0,0) with the Width and Height specified earlier
-                UpdateLayeredWindow(hwnd1, hdc, X_Gui, Y_Gui, Width, Height)
+                ;figured out alpha but now we need to find out how to make it only fade in
+                ; RadialAlpha := 0
+                ;     loop 255 {
+                ;         UpdateLayeredWindow(hwnd1, hdc, X_Gui, Y_Gui, Width, Height, RadialAlpha)
+                ;         Sleep(1)
+                ;         RadialAlpha++
+                ;     }
+                ;UpdateLayeredWindow(hwnd1, hdc, X_Gui, Y_Gui, Width, Height)
+                ;MsgBox("has the menu opened yet")
+                ; RadialAlpha:=0
+                ; loop 255 {
+                ;     UpdateLayeredWindow(hwnd1, X_Gui, Y_Gui, Width, Height, RadialAlpha)
+                ;     Sleep(.6)
+                ;     RadialAlpha++
+                ; }
 
                 SelectObject(hdc, obm)    ; Select the object back into the hdc
                 DeleteObject(hbm)    ; Now the bitmap may be deleted
                 DeleteDC(hdc)    ; Also the device context related to the bitmap may be deleted
                 Gdip_DeleteGraphics(G)    ; The graphics may now be deleted
+                SoundPlay(This.ShowSfxPath)
             }
             RM_KeyState2_Prev := RM_KeyState2
             Section_Mouse_Prev := Section_Mouse
@@ -719,20 +735,20 @@ ExitFunc(ExitReason, ExitCode)
     Gdip_Shutdown(pToken)
 }
 
-Gdip_GetPointsSection(PosX, PosY, R_1, R_2, Sections, Offset, Section := "1") {
+Gdip_GetPointsSection(PosX, PosY, outer_Radius, inner_Radius, Sections, Offset, Section := "1") {
     Section := Section - 1
     SectionAngle := 2 * 3.141592653589793 / Sections
-    R_2_Min := 4 * Offset / Sin(SectionAngle)
-    R_2 := R_2 > R_2_Min ? R_2 : R_2_Min
-    SweepAngle := ACos((R_1 * cos(SectionAngle / 2) + Offset * sin(SectionAngle / 2)) / R_1) * 2
-    SweepAngle_2 := ACos((R_2 * cos(SectionAngle / 2) + Offset * sin(SectionAngle / 2)) / R_2) * 2
+    inner_Radius_Min := 4 * Offset / Sin(SectionAngle)
+    inner_Radius := inner_Radius > inner_Radius_Min ? inner_Radius : inner_Radius_Min
+    SweepAngle := ACos((outer_Radius * cos(SectionAngle / 2) + Offset * sin(SectionAngle / 2)) / outer_Radius) * 2
+    SweepAngle_2 := ACos((inner_Radius * cos(SectionAngle / 2) + Offset * sin(SectionAngle / 2)) / inner_Radius) * 2
 
-    Loop_Sections := round(R_1 * SweepAngle)
+    Loop_Sections := round(outer_Radius * SweepAngle)
     StartAngle := -SweepAngle / 2 + SectionAngle * (Section)
     loop Loop_Sections {
         Angle := StartAngle + (A_Index - 1) * SweepAngle / (Loop_Sections - 1)
-        X_Arc := round(PosX + R_1 * cos(Angle))
-        Y_Arc := round(PosY + R_1 * sin(Angle))
+        X_Arc := round(PosX + outer_Radius * cos(Angle))
+        Y_Arc := round(PosY + outer_Radius * sin(Angle))
         if (A_Index = 1) {
             Points := X_Arc "," Y_Arc
             X_Arc_Start := X_Arc
@@ -742,12 +758,12 @@ Gdip_GetPointsSection(PosX, PosY, R_1, R_2, Sections, Offset, Section := "1") {
         Points .= "|" X_Arc "," Y_Arc
     }
 
-    Loop_Sections := round(R_2 * SweepAngle_2)
+    Loop_Sections := round(inner_Radius * SweepAngle_2)
     StartAngle_2 := SweepAngle_2 / 2 + SectionAngle * (Section)
     loop Loop_Sections {
         Angle := StartAngle_2 - (A_Index - 1) * SweepAngle_2 / (Loop_Sections - 1)
-        X_Arc := round(PosX + R_2 * cos(Angle))
-        Y_Arc := round(PosY + R_2 * sin(Angle))
+        X_Arc := round(PosX + inner_Radius * cos(Angle))
+        Y_Arc := round(PosY + inner_Radius * sin(Angle))
         Points .= "|" X_Arc "," Y_Arc
     }
 
@@ -758,7 +774,7 @@ Gdip_GetPointsSection(PosX, PosY, R_1, R_2, Sections, Offset, Section := "1") {
 
 ;#######################################################################
 
-RM_GetSection(Sections, R_2, PosX, PosY) {
+RM_GetSection(Sections, inner_Radius, PosX, PosY) {
 
     CoordMode("Mouse", "Screen")
     WinGetPos(&X_Win, &Y_Win, , , "RM_Menu")
@@ -772,9 +788,9 @@ RM_GetSection(Sections, R_2, PosX, PosY) {
     X_Rel := X_Rel = 0 ? 0.01 : X_Rel    ; (correction to prevent X to be 0)
     Y_Rel := Y_Rel = 0 ? 0.01 : Y_Rel    ; (correction to prevent X to be 0)
 
-    if (Distance_Center < R_2) {
+    if (Distance_Center < inner_Radius) {
         Section_Mouse := 0
-    } else if (Distance_Center > R_2) {
+    } else if (Distance_Center > inner_Radius) {
         a := X_Rel = 0 ? (Y_Rel = 0 ? 0 : Y_Rel > 0 ? 90 : 270) : atan(Y_Rel / X_Rel) * 57.2957795130823209    ; 180/pi
         Angle := X_Rel < 0 ? 180 + a : a < 0 ? 360 + a : a
         Section_Mouse := 1 + round(Angle / 360 * Sections)
