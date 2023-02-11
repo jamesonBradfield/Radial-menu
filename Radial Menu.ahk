@@ -16,26 +16,27 @@ PosY := 0
 
 +mButton::
 {
-    global PosX, PosY
-    ClickPosition(&PosX, &PosY)
+    ClickPosition()
     OpenAppRadial()
 }
 ^mButton::
 {
-    global PosX, PosY
-    ClickPosition(&PosX, &PosY)
+    ClickPosition()
     CheckContext()
 }
 mButton::
 {
-    global PosX, PosY
-    ClickPosition(&PosX, &PosY)
+    ClickPosition()
+    MsgBox(PosX)
+    MsgBox(PosY)
     OpenBaseRadial()
 }
 
-ClickPosition(&OVarX, &OVarY)
+ClickPosition(*)
 {
-    MouseGetPos(&OVarX, &OVarY)
+    global PosX, PosY
+    CoordMode("Mouse", "Screen")
+    MouseGetPos(&PosX, &PosY)
     return
 }
 ;#endregion
