@@ -8,7 +8,6 @@
 
 ; Uncomment if Gdip.ahk is not in your standard library
 #Include Gdip_All.ahk
-;When on desktop Radial menu acts funny
 PosX := 0
 PosY := 0
 ;#region Input
@@ -27,8 +26,6 @@ PosY := 0
 mButton::
 {
     ClickPosition()
-    MsgBox(PosX)
-    MsgBox(PosY)
     OpenBaseRadial()
 }
 
@@ -42,7 +39,8 @@ ClickPosition(*)
 ;#endregion
 ;#region openRadialsFunctions
 OpenBaseRadial(*) {
-    ; MouseMove(PosX, PosY, 0)
+    global PosX, PosY
+    MouseMove(PosX, PosY, 0)
     Result := CreateBaseRadial()
     switch Result
     {
@@ -57,7 +55,8 @@ OpenBaseRadial(*) {
     }
 }
 OpenAppRadial(*) {
-    ; MouseMove(PosX, PosY)
+    global PosX, PosY
+    MouseMove(PosX, PosY)
     openResult := CreateAppRadial()
     switch openResult
     {
@@ -79,6 +78,8 @@ CheckContext(*) {
 }
 CreateContextMenu(WindowProcess) {
     WindowProcess := "ahk_exe " . WindowProcess
+    global PosX, PosY
+    MouseMove(PosX, PosY)
     switch WindowProcess {
         case "ahk_exe chrome.exe": GoogleChromeHotkeys()
         case "ahk_exe Discord.exe": DiscordHotkeys()
@@ -373,11 +374,11 @@ Class Radial_Menu {
 
         X_Gui := PosX - R_3
         Y_Gui := PosY - R_3
-        X_Gui := PosX - R_3 + X_Win
-        Y_Gui := PosY - R_3 + Y_Win
+        ;idek what these were doing they mess up the code when running anything in windowed mode
+        ;X_Gui := PosX - R_3 + X_Win
+        ;Y_Gui := PosY - R_3 + Y_Win
         Height_Gui := R_3 * 2
         Width_Gui := R_3 * 2
-
         Width := R_3 * 2
         height := R_3 * 2
 
