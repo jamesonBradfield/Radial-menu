@@ -77,6 +77,7 @@ CreateBaseRadial(*) {
     ;GMenu.Add("", "", 6)
     GMenu.Add("Close", "Images\close.png", 4)
     GMenu.Add2("Change menu color", "Images\settingsIcon.png", 4)
+    GMenu.ResetRadialAlpha()
     ;GMenu.Add("", "", 8)
     Return Result := GMenu.Show()
 }
@@ -111,6 +112,7 @@ CreateAppRadial(*) {
     GMenu.Add("", "", 6)
     GMenu.Add("Back", "Images\backIcon.png", 7)
     GMenu.Add("Open Eagle", "Images\eagleIcon.png", 8)
+    GMenu.ResetRadialAlpha()
     Return openResult := GMenu.Show()
 }
 OpenWindowManagementRadial(*) {
@@ -144,6 +146,7 @@ CreateWindowManagementRadial(){
     GMenu.Add2("", "", 6)
     GMenu.Add("", "", 7)
     GMenu.Add2("", "", 7)
+    GMenu.ResetRadialAlpha()
     Return Result := GMenu.Show()
 }
 
@@ -192,7 +195,8 @@ CreateGoogleChromeRadial(*) {
     ;GMenu.Add("Save8", "Images/smt_flat_wall_mt.gif", 6)
     GMenu.Add("Back", "Images\backIcon.png", 5)
     GMenu.Add("Address Bar", "Images\searchIcon.png", 6)
-    GMenu.Add2("Find", "Images\searchIcon.png",6)
+    GMenu.Add2("Find", "Images\searchIcon.png", 6)
+    GMenu.ResetRadialAlpha()
     Return Result := GMenu.Show()
 }
 GoogleChromeHotkeys() {
@@ -232,6 +236,7 @@ CreateDiscordRadial(*) {
     GMenu.Add2("Navigate Down", "Images/downIcon.png", 4)
     GMenu.Add("Back", "Images\backIcon.png", 5)
     GMenu.Add("Search In Channel", "Images\searchIcon.png", 6)
+    GMenu.ResetRadialAlpha()
     Return Result := GMenu.Show()
 }
 DiscordHotkeys() {
@@ -275,6 +280,7 @@ CreateVsCodeRadial(*) {
     GMenu.Add2("Close", "Images\close.png", 6)
     GMenu.Add("Copy Line Down", "Images\downIcon.png", 7)
     GMenu.Add2("Copy Line Up", "Images\upIcon.png", 7)
+    GMenu.ResetRadialAlpha()
     Return Result := GMenu.Show()
 }
 VsCodeHotkeys() {
@@ -319,6 +325,7 @@ CreateVsCodePluginsRadial(*) {
     GMenu.Add2("", "", 7)
     GMenu.Add("", "", 7)
     GMenu.Add("", "", 7)
+    GMenu.ResetRadialAlpha()
     Return Result := GMenu.Show()
 }
 VsCodePluginsHotkeys() {
@@ -353,6 +360,7 @@ CreateObsidianRadial(*) {
     GMenu.Add("Show References", "Images\deafenIcon.png", 4)
     GMenu.Add("Find", "Images\searchIcon.png", 5)
     GMenu.Add("Back", "Images\backIcon.png", 6)
+    GMenu.ResetRadialAlpha()
     Return Result := GMenu.Show()
 }
 ObsidianHotkeys() {
@@ -399,7 +407,7 @@ Class Radial_Menu {
         This.Sections := "4"
         This.RM_Key := "Capslock"
         This.Sect := Map()
-
+        
         This.Sect_Name := Map()
         This.Sect_Img := Map()
         This.Sect_Name2 := Map()
@@ -409,6 +417,10 @@ Class Radial_Menu {
         This.ColorSelected := "121922"
         This.ColorLineSelected := "000000"
         This.ShowSfxPath := "sfx\219069__annabloom__click1.wav"
+        This.RadialAlpha := 255
+    }
+    ResetRadialAlpha() {
+        This.RadialAlpha := 0
     }
     SetRadialColors(ColorBackGround, ColorLineBackGround, ColorSelected, ColorLineSelected) {
         This.ColorBackGround := ColorBackGround
@@ -464,6 +476,7 @@ Class Radial_Menu {
     ;Show is called to build the visual elements of the pie (I think)
     Show() {
         ;global &PosX, &PosY
+        global RadialAlpha
         static
         SectName := ""
         CoordMode "Mouse", "Screen"
@@ -670,24 +683,18 @@ Class Radial_Menu {
                         Gdip_TextToGraphics(G, Section.Name, "vCenter x" This.Sect.%A_Index%.X_Bitmap - 20 + 8 " y" This.Sect.%A_Index%.Y_Bitmap - 20 + 8, , 40, 40)
                     }
                 }
+                if (This.RadialAlpha != 255) {
+                    loop 255 {
+                        UpdateLayeredWindow(hwnd1, hdc, X_Gui, Y_Gui, Width, Height, This.RadialAlpha)
+                        This.RadialAlpha++
+                        if (mod(This.RadialAlpha, 16) = 0) {
+                            Sleep(1)
+                        }
+                    }                    
+                }
                 ; Update the specified window we have created (hwnd1) with a handle to our bitmap (hdc), specifying the x,y,w,h we want it positioned on our screen
                 ; So this will position our gui at (0,0) with the Width and Height specified earlier
                 ;figured out alpha but now we need to find out how to make it only fade in
-                ; RadialAlpha := 0
-                ;     loop 255 {
-                ;         UpdateLayeredWindow(hwnd1, hdc, X_Gui, Y_Gui, Width, Height, RadialAlpha)
-                ;         Sleep(1)
-                ;         RadialAlpha++
-                ;     }
-                ;UpdateLayeredWindow(hwnd1, hdc, X_Gui, Y_Gui, Width, Height)
-                ;MsgBox("has the menu opened yet")
-                ; RadialAlpha:=0
-                ; loop 255 {
-                ;     UpdateLayeredWindow(hwnd1, X_Gui, Y_Gui, Width, Height, RadialAlpha)
-                ;     Sleep(.6)
-                ;     RadialAlpha++
-                ; }
-
                 SelectObject(hdc, obm)    ; Select the object back into the hdc
                 DeleteObject(hbm)    ; Now the bitmap may be deleted
                 DeleteDC(hdc)    ; Also the device context related to the bitmap may be deleted
@@ -724,6 +731,7 @@ Class Radial_Menu {
         Gui_Radial_Menu.Destroy()
         Return SectName
     }
+    
 }
 
 ;#######################################################################
