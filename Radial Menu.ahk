@@ -10,7 +10,6 @@
 #Include Gdip_All.ahk
 PosX := 0
 PosY := 0
-;#region Input
 ^XButton1:: Reload
 
 +mButton::
@@ -36,8 +35,6 @@ ClickPosition(*)
     MouseGetPos(&PosX, &PosY)
     return
 }
-;#endregion
-;#region openRadialsFunctions
 OpenBaseRadial(*) {
     global PosX, PosY
     MouseMove(PosX, PosY, 0)
@@ -69,12 +66,9 @@ OpenAppRadial(*) {
         default: MsgBox(openResult)
     }
 }
-;#endregion
-;#region Context Menu Contextualization
 CheckContext(*) {
     WindowProcess := WinGetProcessName("A")
     CreateContextMenu(WindowProcess)
-    googleChromeResult := ""
 }
 CreateContextMenu(WindowProcess) {
     WindowProcess := "ahk_exe " . WindowProcess
@@ -86,12 +80,103 @@ CreateContextMenu(WindowProcess) {
         case "ahk_exe Obsidian.exe": ObsidianHotkeys()
         case "ahk_exe Eagle.exe":
         case "ahk_exe Code.exe": VsCodeHotkeys()
-
+        
         default: MsgBox("this app is not supported yet")
     }
 }
+;this is just the basic way of creating radials
+CreateBaseRadial(*) {
+    GMenu := Radial_Menu()
+    GMenu.SetSections("4")
+    ;when this key is pressed the radial section will move to its second "Option" Syntax below
+    GMenu.SetKeySpecial("Ctrl")
+    ;RadialMenuName.Add2("OnSelectString", "SectionIcon", sectionNumber)
+    ;GMenu.Add("", "", 1)
+    ;GMenu.Add("", "", 2)
+    ;GMenu.Add2("", "", 2)
+    GMenu.Add("Open App", "Images\NewTabIcon.png", 2)
+    GMenu.Add("Context Menu", "Images/pallette.png", 1)
+    ;GMenu.Add("", "", 5)
+    ;GMenu.Add2("", "Images/fbcp_asm_image.gif", 5)
+    ;GMenu.Add("", "", 6)
+    GMenu.Add("Windows", "Images\close.png", 3)
+    GMenu.Add("Close", "Images\close.png", 4)
+    ;GMenu.Add("", "", 8)
+    Return Result := GMenu.Show()
+}
+;this radial is made when the Open App section is chosen
+CreateAppRadial(*) {
+    openRadial := Radial_Menu()
+    openRadial.SetSections("8")
+    ;openRadial.SetKey("mbutton")
+    openRadial.SetKeySpecial("Ctrl")
+    openRadial.Add("Open Obsidian", "Images\obsidianIcon.png", 1)
+    ;openRadial.Add2("Open AltApp #2", "", 2)
+    openRadial.Add("Open Discord", "Images\discordIcon.png", 2)
+    openRadial.Add("Open Google Chrome", "Images\googleChromeIcon.png", 3)
+    openRadial.Add("Open Visual Studio Code", "Images\vsCodeIcon.png", 4)
+    openRadial.Add("", "", 5)
+    openRadial.Add("", "", 6)
+    openRadial.Add("Back", "Images\backIcon.png", 7)
+    openRadial.Add("Open Eagle", "Images\eagleIcon.png", 8)
+    Return openResult := openRadial.Show()
+}
+
+;#region google chrome stuffies
+CreateGoogleChromeRadial(*) {
+    GMenu := Radial_Menu()
+    GMenu.SetSections("6")
+    GMenu.SetKeySpecial("Ctrl")
+    GMenu.Add("Open New Tab", "Images\NewTabIcon.png", 1)
+    GMenu.Add2("Close Tab", "Images\CloseTab.png", 1)
+    GMenu.Add("Reopen last", "Images\reopenTabIcon.png", 2)
+    GMenu.Add("Address Bar", "Images\searchIcon.png", 3)
+    GMenu.Add("Refresh", "Images/RefreshIcon.png", 4)
+    ;GMenu.Add2("Save5se", "Images/fbcp_asm_image.gif", 4)
+    ;GMenu.Add("Save6", "Images/smt_flat_wall_mt.gif", 5)
+    ;GMenu.Add("Save8", "Images/smt_flat_wall_mt.gif", 6)
+    GMenu.Add("Back", "Images\backIcon.png", 5)
+    GMenu.Add("Search All Open Tabs", "Images\searchIcon.png", 6)
+    Return Result := GMenu.Show()
+}
+GoogleChromeHotkeys() {
+    googleChromeResult := CreateGoogleChromeRadial()
+    switch googleChromeResult
+    {
+        case "Search All Open Tabs": SendInput("{Ctrl Down}{Shift Down}a{Ctrl Up}{Shift Up}")
+        case "Open New Tab": SendInput("{Ctrl Down}t{Ctrl Up}")
+        case "Close Tab": SendInput("{Ctrl Down}w{Ctrl Up}")
+        case "Reopen last": SendInput("{Ctrl Down}{Shift Down}t{Ctrl Up}{Shift Up}")
+        case "Address Bar": SendInput("{Alt Down}d{Alt Up}")
+        case "Refresh": SendInput("{F5}")
+        case "Back": OpenBaseRadial()
+        default: MsgBox(googleChromeResult)
+    }
+}
+OpenGoogleChrome(*) {
+    if (WinExist("ahk_exe chrome.exe")) {
+        WinActivate("ahk_exe chrome.exe")
+    } else {
+        Run("C:\Program Files (x86)\Google\Chrome\Application\chrome.exe")
+    }
+}
 ;#endregion
-;#region Context Specific Hotkeys
+;#region Discord stuffies
+CreateDiscordRadial(*) {
+    GMenu := Radial_Menu()
+    GMenu.SetSections("6")
+    GMenu.SetKeySpecial("Ctrl")
+    GMenu.Add("Quick Switcher", "Images\DiscordQuickSwitchIcon.png", 1)
+    GMenu.Add2("Mark Server Read", "Images/bookIcon.png", 1)
+    GMenu.Add("Toggle Last Server and DMs", "Images\messageIcon.png", 2)
+    GMenu.Add("Toggle Mute", "Images\muteIcon.png", 3)
+    GMenu.Add2("Toggle Deafen", "Images\deafenIcon.png", 3)
+    GMenu.Add("Navigate Up", "Images/upIcon.png", 4)
+    GMenu.Add2("Navigate Down", "Images/downIcon.png", 4)
+    GMenu.Add("Back", "Images\backIcon.png", 5)
+    GMenu.Add("Search In Channel", "Images\searchIcon.png", 6)
+    Return Result := GMenu.Show()
+}
 DiscordHotkeys() {
     DiscordResult := CreateDiscordRadial()
     switch DiscordResult
@@ -108,19 +193,31 @@ DiscordHotkeys() {
         default: MsgBox(DiscordResult)
     }
 }
-GoogleChromeHotkeys() {
-    googleChromeResult := CreateGoogleChromeRadial()
-    switch googleChromeResult
-    {
-        case "Search All Open Tabs": SendInput("{Ctrl Down}{Shift Down}a{Ctrl Up}{Shift Up}")
-        case "Open New Tab": SendInput("{Ctrl Down}t{Ctrl Up}")
-        case "Close Tab": SendInput("{Ctrl Down}w{Ctrl Up}")
-        case "Reopen last": SendInput("{Ctrl Down}{Shift Down}t{Ctrl Up}{Shift Up}")
-        case "Address Bar": SendInput("{Alt Down}d{Alt Up}")
-        case "Refresh": SendInput("{F5}")
-        case "Back": OpenBaseRadial()
-        default: MsgBox(googleChromeResult)
+OpenDiscord(*) {
+    if (WinExist("ahk_exe Discord.exe")) {
+        WinActivate("ahk_exe Discord.exe")
+    } else {
+        Run("C:\Users\Jamie\AppData\Local\Discord\Update.exe --processStart Discord.exe")
     }
+}
+;#endregion
+;#region VsCode stuffies
+CreateVsCodeRadial(*) {
+    GMenu := Radial_Menu()
+    GMenu.SetSections("7")
+    GMenu.SetKeySpecial("Ctrl")
+    GMenu.Add("Command Pallette", "Images\pallette.png", 1)
+    GMenu.Add2("Quick Open", "Images/bookIcon.png", 1)
+    GMenu.Add("Toggle Sidebar", "Images\toggle.png", 2)
+    GMenu.Add2("Toggle Zen Mode", "Images\zenModeIcon.png", 2)
+    GMenu.Add("Comment", "", 3)
+    GMenu.Add("Show References", "Images\deafenIcon.png", 4)
+    GMenu.Add("Find", "Images\searchIcon.png", 5)
+    GMenu.Add("Back", "Images\backIcon.png", 6)
+    GMenu.Add2("Replace", "Images\RefreshIcon.png", 6)
+    GMenu.Add("Copy Line Down", "Images\downIcon.png", 7)
+    GMenu.Add2("Copy Line Up", "Images\upIcon.png", 7)
+    Return Result := GMenu.Show()
 }
 VsCodeHotkeys() {
     VsCodeResult := CreateVsCodeRadial()
@@ -128,7 +225,7 @@ VsCodeHotkeys() {
     {
         case "Command Pallette": SendInput("{Ctrl Down}{Shift Down}p{Ctrl Up}{Shift Up}")
         case "Quick Open": SendInput("{Ctrl Down}p{Ctrl Up}")
-        case "Close Sidebar": SendInput("{Ctrl Down}b{Ctrl Up}")
+        case "Toggle Sidebar": SendInput("{Ctrl Down}b{Ctrl Up}")
         case "Toggle Zen Mode": SendInput("{Ctrl Down}k{Ctrl Up}z")
         case "Comment": SendInput("{Shift Down}{Alt Down}a{Shift Up}{Alt Up}")
         case "Find": SendInput("{Ctrl Down}f{Ctrl Up}")
@@ -139,6 +236,30 @@ VsCodeHotkeys() {
         case "Back": OpenBaseRadial()
         default: MsgBox(VsCodeResult)
     }
+}
+OpenVScode(*) {
+    if (WinExist("ahk_exe Code.exe")) {
+        WinActivate("ahk_exe Code.exe")
+    }
+    else {
+        Run("C:\Users\Jamie\AppData\Local\Programs\Microsoft VS Code\Code.exe")    ;open from file path
+    }
+}
+;#endregion
+;#region Obsidian stuffies
+CreateObsidianRadial(*) {
+    GMenu := Radial_Menu()
+    GMenu.SetSections("6")
+    GMenu.SetKeySpecial("Ctrl")
+    GMenu.Add("Open Daily Note", "Images\NewTabIcon.png", 1)
+    GMenu.Add2("Open Tomorrows Daily Note", "Images/bookIcon.png", 1)
+    GMenu.Add("Pallette", "Images\pallette.png", 2)
+    GMenu.Add("Show Todays Day Planner", "Images\commentIcon.png", 3)
+    GMenu.Add2("Show Timeline", "Images\commentIcon.png", 3)
+    GMenu.Add("Show References", "Images\deafenIcon.png", 4)
+    GMenu.Add("Find", "Images\searchIcon.png", 5)
+    GMenu.Add("Back", "Images\backIcon.png", 6)
+    Return Result := GMenu.Show()
 }
 ObsidianHotkeys() {
     ObsidianResult := CreateObsidianRadial()
@@ -155,129 +276,6 @@ ObsidianHotkeys() {
         default: MsgBox(ObsidianResult)
     }
 }
-;#endregion
-;#region createRadialsFunctions
-CreateAppRadial(*) {
-    openRadial := Radial_Menu()
-    openRadial.SetSections("8")
-    ;openRadial.SetKey("mbutton")
-    openRadial.SetKeySpecial("Ctrl")
-    openRadial.Add("Open Obsidian", "C:\Users\Jamie\Desktop\AutoHotkey\Code\v2\Images\obsidianIcon.png", 1)
-    ;openRadial.Add2("Open AltApp #2", "", 2)
-    openRadial.Add("Open Discord", "C:\Users\Jamie\Desktop\AutoHotkey\Code\v2\Images\discordIcon.png", 2)
-    openRadial.Add("Open Google Chrome", "C:\Users\Jamie\Desktop\AutoHotkey\Code\v2\Images\googleChromeIcon.png", 3)
-    openRadial.Add("Open Visual Studio Code", "C:\Users\Jamie\Desktop\AutoHotkey\Code\v2\Images\vsCodeIcon.png", 4)
-    openRadial.Add("", "", 5)
-    openRadial.Add("", "", 6)
-    openRadial.Add("Back", "C:\Users\Jamie\Desktop\AutoHotkey\Code\v2\Images\backIcon.png", 7)
-    openRadial.Add("Open Eagle", "H:\Program Files (x86)\Eagle\resources\assets\icon.ico", 8)
-    ;MouseMove(PosX, PosY, 0)
-    Return openResult := openRadial.Show()
-}
-
-CreateBaseRadial(*) {
-    GMenu := Radial_Menu()
-    GMenu.SetSections("3")
-    ;GMenu.SetKey("mbutton")
-    GMenu.SetKeySpecial("Ctrl")
-    ;GMenu.Add("", "", 1)
-    ;GMenu.Add("", "", 2)
-    ;GMenu.Add2("", "", 2)
-    GMenu.Add("Open App", "Images\NewTabIcon.png", 2)
-    GMenu.Add("Context Menu", "Images/pallette.png", 1)
-    ;GMenu.Add("", "", 5)
-    ;GMenu.Add2("", "Images/fbcp_asm_image.gif", 5)
-    ;GMenu.Add("", "", 6)
-    GMenu.Add("Windows", "Images\close.png", 3)
-    GMenu.Add("Close", "Images\close.png", 4)
-    ;GMenu.Add("", "", 8)
-    ;MouseMove(PosX, PosY, 0)
-    Return Result := GMenu.Show()
-}
-;#endregion
-;#region contextBasedRadials
-CreateGoogleChromeRadial(*) {
-    GMenu := Radial_Menu()
-    GMenu.SetSections("6")
-    GMenu.SetKeySpecial("Ctrl")
-    GMenu.Add("Open New Tab", "Images\NewTabIcon.png", 1)
-    GMenu.Add2("Close Tab", "Images\CloseTab.png", 1)
-    GMenu.Add("Reopen last", "Images\reopenTabIcon.png", 2)
-    GMenu.Add("Address Bar", "Images\searchIcon.png", 3)
-    GMenu.Add("Refresh", "Images/RefreshIcon.png", 4)
-    ;GMenu.Add2("Save5se", "Images/fbcp_asm_image.gif", 4)
-    ;GMenu.Add("Save6", "Images/smt_flat_wall_mt.gif", 5)
-    ;GMenu.Add("Save8", "Images/smt_flat_wall_mt.gif", 6)
-    GMenu.Add("Back", "Images\backIcon.png", 5)
-    GMenu.Add("Search All Open Tabs", "Images\searchIcon.png", 6)
-    ;MouseMove(PosX, PosY, 0)
-    Return Result := GMenu.Show()
-}
-CreateDiscordRadial(*) {
-    GMenu := Radial_Menu()
-    GMenu.SetSections("6")
-    GMenu.SetKeySpecial("Ctrl")
-    GMenu.Add("Quick Switcher", "Images\DiscordQuickSwitchIcon.png", 1)
-    GMenu.Add2("Mark Server Read", "Images/bookIcon.png", 1)
-    GMenu.Add("Toggle Last Server and DMs", "Images\messageIcon.png", 2)
-    GMenu.Add("Toggle Mute", "Images\muteIcon.png", 3)
-    GMenu.Add2("Toggle Deafen", "Images\deafenIcon.png", 3)
-    GMenu.Add("Navigate Up", "Images/upIcon.png", 4)
-    GMenu.Add2("Navigate Down", "Images/downIcon.png", 4)
-    GMenu.Add("Back", "Images\backIcon.png", 5)
-    GMenu.Add("Search In Channel", "Images\searchIcon.png", 6)
-    ;MouseMove(PosX, PosY, 0)
-    Return Result := GMenu.Show()
-}
-CreateVsCodeRadial(*) {
-    GMenu := Radial_Menu()
-    GMenu.SetSections("7")
-    GMenu.SetKeySpecial("Ctrl")
-    GMenu.Add("Command Pallette", "Images\pallette.png", 1)
-    GMenu.Add2("Quick Open", "Images/bookIcon.png", 1)
-    GMenu.Add("Toggle Sidebar", "Images\toggle.png", 2)
-    GMenu.Add2("Toggle Zen Mode", "Images\zenModeIcon.png", 2)
-    GMenu.Add("Comment", "", 3)
-    GMenu.Add("Show References", "Images\deafenIcon.png", 4)
-    GMenu.Add("Find", "Images\searchIcon.png", 5)
-    GMenu.Add("Back", "Images\backIcon.png", 6)
-    GMenu.Add2("Replace", "Images\RefreshIcon.png", 6)
-    GMenu.Add("Copy Line Down", "Images\downIcon.png", 7)
-    GMenu.Add2("Copy Line Up", "Images\upIcon.png", 7)
-    ;MouseMove(PosX, PosY, 0)
-    Return Result := GMenu.Show()
-}
-CreateObsidianRadial(*) {
-    GMenu := Radial_Menu()
-    GMenu.SetSections("6")
-    GMenu.SetKeySpecial("Ctrl")
-    GMenu.Add("Open Daily Note", "Images\NewTabIcon.png", 1)
-    GMenu.Add2("Open Tomorrows Daily Note", "Images/bookIcon.png", 1)
-    GMenu.Add("Pallette", "Images\pallette.png", 2)
-    GMenu.Add("Show Todays Day Planner", "Images\commentIcon.png", 3)
-    GMenu.Add2("Show Timeline", "Images\commentIcon.png", 3)
-    GMenu.Add("Show References", "Images\deafenIcon.png", 4)
-    GMenu.Add("Find", "Images\searchIcon.png", 5)
-    GMenu.Add("Back", "Images\backIcon.png", 6)
-    ;MouseMove(PosX, PosY, 0)
-    Return Result := GMenu.Show()
-}
-;#endregion
-;#region Open App Functions
-OpenGoogleChrome(*) {
-    if (WinExist("ahk_exe chrome.exe")) {
-        WinActivate("ahk_exe chrome.exe")
-    } else {
-        Run("C:\Program Files (x86)\Google\Chrome\Application\chrome.exe")
-    }
-}
-OpenDiscord(*) {
-    if (WinExist("ahk_exe Discord.exe")) {
-        WinActivate("ahk_exe Discord.exe")
-    } else {
-        Run("C:\Users\Jamie\AppData\Local\Discord\Update.exe --processStart Discord.exe")
-    }
-}
 OpenObsidian(*) {
     if (ProcessExist("Obsidian.exe")) {
         WinActivate("ahk_exe Obsidian.exe")
@@ -286,6 +284,10 @@ OpenObsidian(*) {
         Run("C:\Users\Jamie\AppData\Local\Obsidian\Obsidian.exe")    ;open from file path
     }
 }
+;#endregion
+
+
+/* eagle doesn't have any extra functions since we haven't made a context menu for it*/
 OpenEagle(*) {
     if (ProcessExist("Eagle.exe")) {
         WinActivate("ahk_exe Eagle.exe")
@@ -294,15 +296,7 @@ OpenEagle(*) {
         Run("H:\Program Files (x86)\Eagle\Eagle.exe")    ;open from file path
     }
 }
-OpenVScode(*) {
-    if (WinExist("ahk_exe Code.exe")) {
-        WinActivate("ahk_exe Code.exe")
-    }
-    else {
-        Run("C:\Users\Jamie\AppData\Local\Programs\Microsoft VS Code\Code.exe")    ;open from file path
-    }
-}
-;#endregion
+
 
 ;#region boilerPlate Radial menu code
 Class Radial_Menu {
