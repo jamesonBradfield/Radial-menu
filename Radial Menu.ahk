@@ -17,10 +17,10 @@ PosY := 0
     ClickPosition()
     OpenAppRadial()
 }
-^mButton::
+!mButton::
 {
     ClickPosition()
-    CheckContext()
+    CheckContext("Context Menu")
 }
 mButton::
 {
@@ -35,6 +35,8 @@ ClickPosition(*)
     MouseGetPos(&PosX, &PosY)
     return
 }
+
+;this is just the basic way of creating radials
 OpenBaseRadial(*) {
     global PosX, PosY
     MouseMove(PosX, PosY, 0)
@@ -44,13 +46,41 @@ OpenBaseRadial(*) {
         case "Table": Run("AutoHtmlTable.ahk")
         case "Color": Run("v2ObsidianColor.ahk")
         case "Open App": OpenAppRadial()
-        case "Context Menu": CheckContext()
-        case "Windows": CheckContext()
+        case "Context Menu": CheckContext("Context Menu")
+        case "Windows": OpenWindowManagementRadial()
+        case "Change menu color": OpenColorMenu()
+        case "Plugins": CheckContext("Plugins")
         case "Close":    ;do nothing
         default:
             MsgBox(Result)
     }
 }
+OpenColorMenu() {
+    
+}
+CreateBaseRadial(*) {
+    GMenu := Radial_Menu()
+    GMenu.SetRadialColors("2B3D55","334966","121922","000000")
+    GMenu.SetSections("4")
+    ;when this key is pressed the radial section will move to its second "Option" Syntax below
+    GMenu.SetKeySpecial("Ctrl")
+    ;RadialMenuName.Add2("OnSelectString", "SectionIcon", sectionNumber)
+
+    ;GMenu.Add("", "", 1)
+    ;GMenu.Add("", "", 2)
+    ;GMenu.Add2("", "", 2)
+    GMenu.Add("Context Menu", "Images/pallette.png", 1)
+    GMenu.Add("Open App", "Images\NewTabIcon.png", 2)
+    GMenu.Add2("Windows", "Images\windowsIcon.png", 2)
+    GMenu.Add("Plugins", "Images\extensionsIcon.png", 3)
+    ;GMenu.Add2("", "Images/fbcp_asm_image.gif", 5)
+    ;GMenu.Add("", "", 6)
+    GMenu.Add("Close", "Images\close.png", 4)
+    GMenu.Add2("Change menu color", "Images\settingsIcon.png", 4)
+    ;GMenu.Add("", "", 8)
+    Return Result := GMenu.Show()
+}
+
 OpenAppRadial(*) {
     global PosX, PosY
     MouseMove(PosX, PosY)
@@ -66,62 +96,87 @@ OpenAppRadial(*) {
         default: MsgBox(openResult)
     }
 }
-CheckContext(*) {
-    WindowProcess := WinGetProcessName("A")
-    CreateContextMenu(WindowProcess)
+;this radial is made when the Open App section is chosen (and is used in the above function with a switch)
+CreateAppRadial(*) {
+    GMenu := Radial_Menu()
+    GMenu.SetSections("8")
+    ;GMenu.SetKey("mbutton")
+    GMenu.SetKeySpecial("Ctrl")
+    GMenu.Add("Open Obsidian", "Images\obsidianIcon.png", 1)
+    ;GMenu.Add2("Open AltApp #2", "", 2)
+    GMenu.Add("Open Discord", "Images\discordIcon.png", 2)
+    GMenu.Add("Open Google Chrome", "Images\googleChromeIcon.png", 3)
+    GMenu.Add("Open Visual Studio Code", "Images\vsCodeIcon.png", 4)
+    GMenu.Add("", "", 5)
+    GMenu.Add("", "", 6)
+    GMenu.Add("Back", "Images\backIcon.png", 7)
+    GMenu.Add("Open Eagle", "Images\eagleIcon.png", 8)
+    Return openResult := GMenu.Show()
 }
-CreateContextMenu(WindowProcess) {
+OpenWindowManagementRadial(*) {
+    global PosX, PosY
+    MouseMove(PosX, PosY)
+    openResult := CreateWindowManagementRadial()
+    switch openResult
+    {
+        case "Move Active Window To Left": SendInput("#{left}")
+        case "Move Active Window To Right": SendInput("#{right}")
+        case "Grow Window":SendInput("#{up}")
+        case "Shrink Window":SendInput("#{up}")
+        case "Open Google Chrome":
+        case "Open Visual Studio Code":
+        case "Back": OpenBaseRadial()
+        default: MsgBox(openResult)
+    }
+}
+CreateWindowManagementRadial(){
+    GMenu := Radial_Menu()
+    GMenu.SetSections("7")
+    GMenu.SetKeySpecial("Ctrl")
+    GMenu.Add("", "", 1)
+    GMenu.Add("", "", 2)
+    GMenu.Add("", "", 3)
+    GMenu.Add("Grow Window", "Images\toggleMaximize.png", 4)
+    GMenu.Add2("Shrink Window", "Images\toggleMaximize.png", 4)
+    GMenu.Add("Move Active Window To Left", "Images\leftArrowIcon.png", 5)
+    GMenu.Add2("Move Active Window To Right", "Images/rightArrowIcon.png", 5)
+    GMenu.Add("Back", "Images\backIcon.png", 6)
+    GMenu.Add2("", "", 6)
+    GMenu.Add("", "", 7)
+    GMenu.Add2("", "", 7)
+    Return Result := GMenu.Show()
+}
+
+CheckContext(sectionCalledFrom) {
+    WindowProcess := WinGetProcessName("A")
+    CreateContextMenu(WindowProcess,sectionCalledFrom)        
+}
+CreateContextMenu(WindowProcess,sectionCalledFrom) {
     WindowProcess := "ahk_exe " . WindowProcess
     global PosX, PosY
     MouseMove(PosX, PosY)
-    switch WindowProcess {
-        case "ahk_exe chrome.exe": GoogleChromeHotkeys()
-        case "ahk_exe Discord.exe": DiscordHotkeys()
-        case "ahk_exe Obsidian.exe": ObsidianHotkeys()
-        case "ahk_exe Eagle.exe":
-        case "ahk_exe Code.exe": VsCodeHotkeys()
-        
-        default: MsgBox("this app is not supported yet")
+    if (sectionCalledFrom = "Context Menu") {
+        switch WindowProcess {
+            case "ahk_exe chrome.exe": GoogleChromeHotkeys()
+            case "ahk_exe Discord.exe": DiscordHotkeys()
+            case "ahk_exe Obsidian.exe": ObsidianHotkeys()
+            case "ahk_exe Eagle.exe":
+            case "ahk_exe Code.exe": VsCodeHotkeys()
+            
+            default: MsgBox("this app is not supported yet")
+        }        
+    }else if(sectionCalledFrom = "Plugins"){
+        switch WindowProcess {
+            case "ahk_exe chrome.exe":
+            case "ahk_exe Discord.exe":
+            case "ahk_exe Obsidian.exe":
+            case "ahk_exe Eagle.exe":
+            case "ahk_exe Code.exe": VsCodePluginsHotkeys()
+            default:
+                
+        }
     }
 }
-;this is just the basic way of creating radials
-CreateBaseRadial(*) {
-    GMenu := Radial_Menu()
-    GMenu.SetSections("4")
-    ;when this key is pressed the radial section will move to its second "Option" Syntax below
-    GMenu.SetKeySpecial("Ctrl")
-    ;RadialMenuName.Add2("OnSelectString", "SectionIcon", sectionNumber)
-    ;GMenu.Add("", "", 1)
-    ;GMenu.Add("", "", 2)
-    ;GMenu.Add2("", "", 2)
-    GMenu.Add("Open App", "Images\NewTabIcon.png", 2)
-    GMenu.Add("Context Menu", "Images/pallette.png", 1)
-    ;GMenu.Add("", "", 5)
-    ;GMenu.Add2("", "Images/fbcp_asm_image.gif", 5)
-    ;GMenu.Add("", "", 6)
-    GMenu.Add("Windows", "Images\close.png", 3)
-    GMenu.Add("Close", "Images\close.png", 4)
-    ;GMenu.Add("", "", 8)
-    Return Result := GMenu.Show()
-}
-;this radial is made when the Open App section is chosen
-CreateAppRadial(*) {
-    openRadial := Radial_Menu()
-    openRadial.SetSections("8")
-    ;openRadial.SetKey("mbutton")
-    openRadial.SetKeySpecial("Ctrl")
-    openRadial.Add("Open Obsidian", "Images\obsidianIcon.png", 1)
-    ;openRadial.Add2("Open AltApp #2", "", 2)
-    openRadial.Add("Open Discord", "Images\discordIcon.png", 2)
-    openRadial.Add("Open Google Chrome", "Images\googleChromeIcon.png", 3)
-    openRadial.Add("Open Visual Studio Code", "Images\vsCodeIcon.png", 4)
-    openRadial.Add("", "", 5)
-    openRadial.Add("", "", 6)
-    openRadial.Add("Back", "Images\backIcon.png", 7)
-    openRadial.Add("Open Eagle", "Images\eagleIcon.png", 8)
-    Return openResult := openRadial.Show()
-}
-
 ;#region google chrome stuffies
 CreateGoogleChromeRadial(*) {
     GMenu := Radial_Menu()
@@ -130,13 +185,14 @@ CreateGoogleChromeRadial(*) {
     GMenu.Add("Open New Tab", "Images\NewTabIcon.png", 1)
     GMenu.Add2("Close Tab", "Images\CloseTab.png", 1)
     GMenu.Add("Reopen last", "Images\reopenTabIcon.png", 2)
-    GMenu.Add("Address Bar", "Images\searchIcon.png", 3)
+    GMenu.Add("Search All Open Tabs", "Images\searchIcon.png", 3)
     GMenu.Add("Refresh", "Images/RefreshIcon.png", 4)
     ;GMenu.Add2("Save5se", "Images/fbcp_asm_image.gif", 4)
     ;GMenu.Add("Save6", "Images/smt_flat_wall_mt.gif", 5)
     ;GMenu.Add("Save8", "Images/smt_flat_wall_mt.gif", 6)
     GMenu.Add("Back", "Images\backIcon.png", 5)
-    GMenu.Add("Search All Open Tabs", "Images\searchIcon.png", 6)
+    GMenu.Add("Address Bar", "Images\searchIcon.png", 6)
+    GMenu.Add2("Find", "Images\searchIcon.png",6)
     Return Result := GMenu.Show()
 }
 GoogleChromeHotkeys() {
@@ -149,6 +205,7 @@ GoogleChromeHotkeys() {
         case "Reopen last": SendInput("{Ctrl Down}{Shift Down}t{Ctrl Up}{Shift Up}")
         case "Address Bar": SendInput("{Alt Down}d{Alt Up}")
         case "Refresh": SendInput("{F5}")
+        case "Find": SendInput("{Ctrl Down}f{Ctrl Up}")
         case "Back": OpenBaseRadial()
         default: MsgBox(googleChromeResult)
     }
@@ -213,8 +270,9 @@ CreateVsCodeRadial(*) {
     GMenu.Add("Comment", "", 3)
     GMenu.Add("Show References", "Images\deafenIcon.png", 4)
     GMenu.Add("Find", "Images\searchIcon.png", 5)
+    GMenu.Add2("Replace", "Images\RefreshIcon.png", 5)
     GMenu.Add("Back", "Images\backIcon.png", 6)
-    GMenu.Add2("Replace", "Images\RefreshIcon.png", 6)
+    GMenu.Add2("Close", "Images\close.png", 6)
     GMenu.Add("Copy Line Down", "Images\downIcon.png", 7)
     GMenu.Add2("Copy Line Up", "Images\upIcon.png", 7)
     Return Result := GMenu.Show()
@@ -234,6 +292,7 @@ VsCodeHotkeys() {
         case "Copy Line Down": SendInput("{Shift Down}{Alt Down}{down}{Shift Up}{Alt Up}")
         case "Copy Line Up": SendInput("{Shift Down}{Alt Down}{up}{Shift Up}{Alt Up}")
         case "Back": OpenBaseRadial()
+        case "Close":
         default: MsgBox(VsCodeResult)
     }
 }
@@ -243,6 +302,41 @@ OpenVScode(*) {
     }
     else {
         Run("C:\Users\Jamie\AppData\Local\Programs\Microsoft VS Code\Code.exe")    ;open from file path
+    }
+}
+CreateVsCodePluginsRadial(*) {
+    GMenu := Radial_Menu()
+    GMenu.SetSections("7")
+    GMenu.SetKeySpecial("Ctrl")
+    GMenu.Add("Toggle Bookmarks", "Images\bookmarkIcon.png", 1)
+    GMenu.Add2("Clear Bookmarks", "", 1)
+    GMenu.Add("Next Bookmark", "", 2)
+    GMenu.Add2("Prev Bookmark", "", 2)
+    GMenu.Add("", "", 3)
+    GMenu.Add("", "", 4)
+    GMenu.Add("", "", 5)
+    GMenu.Add("Back", "Images\backIcon.png", 6)
+    GMenu.Add2("", "", 7)
+    GMenu.Add("", "", 7)
+    GMenu.Add("", "", 7)
+    Return Result := GMenu.Show()
+}
+VsCodePluginsHotkeys() {
+    VsCodeResult := CreateVsCodePluginsRadial()
+    switch VsCodeResult
+    {
+        case "Toggle Bookmarks": SendInput("{Ctrl Down}{Alt Down}k{Ctrl Up}{Alt Up}")
+        case "Clear Bookmarks": ClearBookmarks()
+        case "Next Bookmark":SendInput("{Ctrl Down}{Alt Down}l{Ctrl Up}{Alt Up}")
+        case "Prev Bookmark":SendInput("{Ctrl Down}{Alt Down}j{Ctrl Up}{Alt Up}")
+        case "Back": OpenBaseRadial()
+        case "Close":
+        default: MsgBox(VsCodeResult)
+    }
+    ClearBookmarks() {
+        SendInput("{Ctrl Down}{delete Down}{Ctrl Up}")
+        KeyWait "control"
+        SendInput("b")
     }
 }
 ;#endregion
@@ -286,7 +380,7 @@ OpenObsidian(*) {
 }
 ;#endregion
 
-
+;#region Eagle stuffies
 /* eagle doesn't have any extra functions since we haven't made a context menu for it*/
 OpenEagle(*) {
     if (ProcessExist("Eagle.exe")) {
@@ -296,7 +390,7 @@ OpenEagle(*) {
         Run("H:\Program Files (x86)\Eagle\Eagle.exe")    ;open from file path
     }
 }
-
+;#endregion
 
 ;#region boilerPlate Radial menu code
 Class Radial_Menu {
@@ -310,6 +404,16 @@ Class Radial_Menu {
         This.Sect_Img := Map()
         This.Sect_Name2 := Map()
         This.Sect_Img2 := Map()
+        This.ColorBackGround := "2B3D55"
+        This.ColorLineBackGround := "334966"
+        This.ColorSelected := "121922"
+        This.ColorLineSelected := "000000"
+    }
+    SetRadialColors(ColorBackGround, ColorLineBackGround, ColorSelected, ColorLineSelected) {
+        This.ColorBackGround := ColorBackGround
+        This.ColorLineBackGround := ColorLineBackGround
+        This.ColorSelected := ColorSelected
+        This.ColorLineSelected := ColorLineSelected
     }
     ;This is exactly what it looks like just a function to pass data into the class
     SetSections(Sections) {
@@ -362,13 +466,12 @@ Class Radial_Menu {
         MouseGetPos(&PosX, &PosY)
         WinGetPos(&X_Win, &Y_Win, , , "A")
         R_1 := 80
-        R_2 := R_1 * 0.2
+        R_2 := R_1 * 0.35
         Offset := 2
         R_3 := R_1 + Offset * 2 + 10
 
         X_Gui := PosX - R_3
         Y_Gui := PosY - R_3
-        ;idek what these were doing they mess up the code when running anything in windowed mode
         ;X_Gui := PosX - R_3 + X_Win
         ;Y_Gui := PosY - R_3 + Y_Win
         Height_Gui := R_3 * 2
@@ -397,10 +500,10 @@ Class Radial_Menu {
         Gui_Radial_Menu.Show("NA x" . X_Gui . " y" . Y_Gui . " w" . Width_Gui . " h" . Height_Gui)
         ; Get a handle to this window we have created in order to update it later
         hwnd1 := WinExist()
-        ColorBackGround := "FCFCFC"
-        ColorLineBackGround := "C6DFFC"
-        ColorSelected := "C6DFFC"
-        ColorLineSelected := "F5E5D6"
+        ;ColorBackGround := "FCFCFC"
+        ;ColorLineBackGround := "C6DFFC"
+        ;ColorSelected := "C6DFFC"
+        ;ColorLineSelected := "F5E5D6"
 
         Loop This.Sections {    ;Setting Bitmap images of sections
 
@@ -442,11 +545,12 @@ Class Radial_Menu {
         }
 
         ; Setting brushes and Pens
-        pBrush := Gdip_BrushCreateSolid("0xFF" ColorBackGround)
-        pBrushA := Gdip_BrushCreateSolid("0xFF" ColorSelected)
-        pBrushC := Gdip_BrushCreateSolid("0X01" ColorBackGround)
-        pPen := Gdip_CreatePen("0xFF" ColorLineBackGround, 1)
-        pPenA := Gdip_CreatePen("0xD2" ColorLineSelected, 1)
+        pBrush := Gdip_BrushCreateSolid("0xFF" This.ColorBackGround)
+        ;MsgBox(This.ColorSelected)
+        pBrushA := Gdip_BrushCreateSolid("0xFF" This.ColorSelected)
+        pBrushC := Gdip_BrushCreateSolid("0X01" This.ColorBackGround)
+        pPen := Gdip_CreatePen("0xFF" This.ColorLineBackGround, 1)
+        pPenA := Gdip_CreatePen("0xD2" This.ColorLineSelected, 1)
         hdc := CreateCompatibleDC()
 
         G := Gdip_GraphicsFromHDC(hdc)
