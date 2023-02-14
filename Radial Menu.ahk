@@ -10,9 +10,42 @@
 #Include Gdip_All.ahk
 PosX := 0
 PosY := 0
-ReturnColor := 0x00FF00 ; green
-defColor := [0xAA0000,0x00AA00,0x0000AA]
+ReturnColor := 0x00FF00
+InsertTextLastInputValue := ""
+activeWindowOnRadialOpen := ""
+; defColor := Array()
 ;#region InputSection
+insertTextGui := Gui()
+insertTextGui.Add("Text", , "Which Text would you like to insert")
+insertTextGui.AddEdit("vName")
+insertTextGui.Add("Checkbox", "vUseLastInputValue", "Use last input value?")
+MyBtn := insertTextGui.Add("Button", "Default w80", "OK")
+MyBtn.OnEvent("Click", InsertTextAtSelection)  ; Call MyBtn_Click when clicked.
+
+InsertText(*) {
+    insertTextGui.Show
+}
+InsertTextAtSelection(*) {
+    global InsertTextLastInputValue,activeWindowOnRadialOpen
+    MyInputValues := insertTextGui.Submit()
+    if (MyInputValues.UseLastInputValue = 0) {
+        InsertTextLastInputValue := MyInputValues.Name
+        A_Clipboard := MyInputValues.Name
+        WinActivate(activeWindowOnRadialOpen)
+        ClipWait
+        SendInput("{Ctrl Down}v{Ctrl Up}")
+        Sleep(100)
+        A_Clipboard := ""
+    }else {
+        A_Clipboard := InsertTextLastInputValue
+        WinActivate(activeWindowOnRadialOpen)
+        ClipWait
+        SendInput("{Ctrl Down}v{Ctrl Up}")
+        Sleep(100)
+        A_Clipboard := ""
+    }
+}
+
 ^XButton1:: Reload
 #mButton::
 {
@@ -32,10 +65,29 @@ defColor := [0xAA0000,0x00AA00,0x0000AA]
 }
 mButton::
 {
+    global activeWindowOnRadialOpen
+    activeWindowOnRadialOpen := WinGetID("A")
+    ; global defColor
+    ; defColorString := Array()
+    ; defColorString := FileRead("colors.txt")
+    ; defColorString := StrSplit(defColorString, "`n")
+    ; if (defColorString.Length != 0) {
+    ;     defColor.Length :=defColorString.Length
+    ;     loop defColorString.Length {
+    ;         ;MsgBox(defColorString[A_Index])
+    ;         defColor[A_Index] := str2hex(defColorString[A_Index])
+    ;         MsgBox(defColor[A_Index])
+    ;     }
+    ; }
+    ; FileAppend("","colors.txt")
     ClickPosition()
     OpenBaseRadial()
 }
-
+; str2hex(str){
+; 	loop parse, str
+; 	    hex .= Format("{:x}", Ord(A_LoopField))
+; 	return hex
+; }
 ClickPosition(*)
 {
     global PosX, PosY
@@ -45,7 +97,8 @@ ClickPosition(*)
 }
 ;#endregion
 
-;this is just the basic way of creating radials
+;this is just the basic way of creating radials 
+;i would really like to make a gui radial creator so more people can easily make them
 OpenBaseRadial(*) {
     global PosX, PosY
     MouseMove(PosX, PosY, 0)
@@ -59,6 +112,7 @@ OpenBaseRadial(*) {
         case "Windows": OpenWindowManagementRadial()
         case "Settings": OpenSettingsMenu()
         case "Plugins": CheckContext("Plugins")
+        case "Insert text": InsertText()
         case "Close":    ;do nothing
         default:
             MsgBox(Result)
@@ -67,7 +121,7 @@ OpenBaseRadial(*) {
 CreateBaseRadial(*) {
     GMenu := Radial_Menu()
     GMenu.SetRadialColors("2B3D55","334966","121922","000000")
-    GMenu.SetSections("4")
+    GMenu.SetSections("8")
     ;when this key is pressed the radial section will move to its second "Option" Syntax below
     GMenu.SetKeySpecial("Ctrl")
     ;RadialMenuName.Add2("OnSelectString", "SectionIcon", sectionNumber)
@@ -77,12 +131,15 @@ CreateBaseRadial(*) {
     ;GMenu.Add2("", "", 2)
     GMenu.Add("Context Menu", "Images/pallette.png", 1)
     GMenu.Add("Open App", "Images\NewTabIcon.png", 2)
-    GMenu.Add2("Windows", "Images\windowsIcon.png", 2)
-    GMenu.Add("Plugins", "Images\extensionsIcon.png", 3)
+    GMenu.Add("Windows", "Images\windowsIcon.png", 3)
+    GMenu.Add("Plugins", "Images\extensionsIcon.png", 4)
+    GMenu.Add("","",5)
+    GMenu.Add("Close", "Images\close.png", 6)
+    GMenu.Add2("Settings", "Images\settingsIcon.png", 6)
+    GMenu.Add("","",7)
+    GMenu.Add("Insert text","",8)
     ;GMenu.Add2("", "Images/fbcp_asm_image.gif", 5)
     ;GMenu.Add("", "", 6)
-    GMenu.Add("Close", "Images\close.png", 4)
-    GMenu.Add2("Settings", "Images\settingsIcon.png", 4)
     GMenu.ResetRadialAlpha()
     ;GMenu.Add("", "", 8)
     Return Result := GMenu.Show()
@@ -102,7 +159,7 @@ OpenSettingsMenu(*) {
 CreateSettingsRadial(*){
     GMenu := Radial_Menu()
     GMenu.SetRadialColors("2B3D55","334966","121922","000000")
-    GMenu.SetSections("4")
+    GMenu.SetSections("8")
     ;when this key is pressed the radial section will move to its second "Option" Syntax below
     GMenu.SetKeySpecial("Ctrl")
     ;RadialMenuName.Add2("OnSelectString", "SectionIcon", sectionNumber)
@@ -117,28 +174,37 @@ CreateSettingsRadial(*){
     ;GMenu.Add2("", "Images/fbcp_asm_image.gif", 5)
     ;GMenu.Add("", "", 6)
     GMenu.Add("", "", 4)
-    GMenu.Add2("", "", 4)
+    GMenu.Add("", "", 5)
+    GMenu.Add("", "", 6)
+    GMenu.Add("", "", 7)
+    GMenu.Add("", "", 8)
     GMenu.ResetRadialAlpha()
     ;GMenu.Add("", "", 8)
     Return Result := GMenu.Show()
 }
+
+;#region colorSelect
 OpenColorMenu() {
     global defColor,ReturnColor
     ReturnColor := ColorSelect(0,WinGetID("A"), &defColor, 0)
     colorList := ""
     For k, v in defColor ; if user changes Custom Colors, they will be stored in defColor array
         If v
-            colorList .= "Color: " Format("0x{:06X}", v) "`r`n"
+            colorList .=Format("0x{:06X}", v) "`r`n"
     SetColorValues(colorList)
 }
 SetColorValues(colorList) {
     colorList := StrSplit(colorList, "`n")
-    colorList.RemoveAt(colorList.Length)
-    loop colorList.Length {
-        MsgBox(colorList[A_Index])
+    if (colorList.Length != 0) {
+        colorList.RemoveAt(colorList.Length)
+        loop colorList.Length {
+            ;gotta write the colors to file
+            FileAppend(colorList[A_Index] . "`n","colors.txt")
+        }
+    }else {
+        MsgBox("Shouldn't do anything no colors were added")
     }
 }
-;#region colorSelect
 ; AHK v2
 ; originally posted by maestrith 
 ; https://autohotkey.com/board/topic/94083-ahk-11-font-and-color-dialogs/
@@ -214,39 +280,7 @@ ColorSelect(Color := 0, hwnd := 0, &custColorObj := "",disp:=false) {
   ; LPEDITMENU   lpEditInfo;        |36/64  |   40/72
 ; } CHOOSECOLORW, *LPCHOOSECOLORW;
 ;#endregion
-OpenAppRadial(*) {
-    global PosX, PosY
-    MouseMove(PosX, PosY)
-    openResult := CreateAppRadial()
-    switch openResult
-    {
-        case "Open Eagle": OpenEagle()
-        case "Open Obsidian": OpenObsidian()
-        case "Open Discord": OpenDiscord()
-        case "Open Google Chrome": OpenGoogleChrome()
-        case "Open Visual Studio Code": OpenVScode()
-        case "Back": OpenBaseRadial()
-        default: MsgBox(openResult)
-    }
-}
-;this radial is made when the Open App section is chosen (and is used in the above function with a switch)
-CreateAppRadial(*) {
-    GMenu := Radial_Menu()
-    GMenu.SetSections("8")
-    ;GMenu.SetKey("mbutton")
-    GMenu.SetKeySpecial("Ctrl")
-    GMenu.Add("Open Obsidian", "Images\obsidianIcon.png", 1)
-    ;GMenu.Add2("Open AltApp #2", "", 2)
-    GMenu.Add("Open Discord", "Images\discordIcon.png", 2)
-    GMenu.Add("Open Google Chrome", "Images\googleChromeIcon.png", 3)
-    GMenu.Add("Open Visual Studio Code", "Images\vsCodeIcon.png", 4)
-    GMenu.Add("", "", 5)
-    GMenu.Add("", "", 6)
-    GMenu.Add("Back", "Images\backIcon.png", 7)
-    GMenu.Add("Open Eagle", "Images\eagleIcon.png", 8)
-    GMenu.ResetRadialAlpha()
-    Return openResult := GMenu.Show()
-}
+;#region WindowManagementRadial
 OpenWindowManagementRadial(*) {
     global PosX, PosY
     MouseMove(PosX, PosY)
@@ -258,14 +292,14 @@ OpenWindowManagementRadial(*) {
         case "Grow Window":SendInput("#{up}")
         case "Shrink Window":SendInput("#{up}")
         case "Open Google Chrome":
-        case "Open Visual Studio Code":
-        case "Back": OpenBaseRadial()
+            case "Open Visual Studio Code":
+                case "Back": OpenBaseRadial()
         default: MsgBox(openResult)
     }
 }
 CreateWindowManagementRadial(){
     GMenu := Radial_Menu()
-    GMenu.SetSections("7")
+    GMenu.SetSections("8")
     GMenu.SetKeySpecial("Ctrl")
     GMenu.Add("", "", 1)
     GMenu.Add("", "", 2)
@@ -278,10 +312,12 @@ CreateWindowManagementRadial(){
     GMenu.Add2("", "", 6)
     GMenu.Add("", "", 7)
     GMenu.Add2("", "", 7)
+    GMenu.Add("", "", 8)
     GMenu.ResetRadialAlpha()
     Return Result := GMenu.Show()
 }
-
+;#endregion
+;#region ContextRadial
 CheckContext(sectionCalledFrom) {
     WindowProcess := WinGetProcessName("A")
     CreateContextMenu(WindowProcess,sectionCalledFrom)        
@@ -304,30 +340,76 @@ CreateContextMenu(WindowProcess,sectionCalledFrom) {
         switch WindowProcess {
             case "ahk_exe chrome.exe":
             case "ahk_exe Discord.exe":
-            case "ahk_exe Obsidian.exe":
+            case "ahk_exe Obsidian.exe":ObsidianPluginsHotkeys()
             case "ahk_exe Eagle.exe":
-            case "ahk_exe Code.exe": VsCodePluginsHotkeys()
-            default:
+                case "ahk_exe Code.exe": VsCodePluginsHotkeys()
+                default:
                 
+                }
+            }
         }
-    }
-}
-;#region google chrome stuffies
+        ;#endregion
+;#region appRadial
+        OpenAppRadial(*) {
+            global PosX, PosY
+            MouseMove(PosX, PosY)
+            openResult := CreateAppRadial()
+            switch openResult
+            {
+                case "Open Eagle": OpenEagle(0)
+                case "Open Eagle and": OpenEagle(1)
+                case "Open Obsidian": OpenObsidian(0)
+                case "Open Obsidian and": OpenObsidian(1)
+                case "Open Discord": OpenDiscord(0)
+                case "Open Discord and": OpenDiscord(1)
+                case "Open Google Chrome": OpenGoogleChrome(0)
+                case "Open Google Chrome and": OpenGoogleChrome(1)
+                case "Open Visual Studio Code": OpenVScode(0)
+                case "Open Visual Studio Code and": OpenVScode(1)
+                case "Back": OpenBaseRadial()
+                default: MsgBox(openResult)
+            }
+        }
+        ;this radial is made when the Open App section is chosen (and is used in the above function with a switch)
+        CreateAppRadial(*) {
+            GMenu := Radial_Menu()
+            GMenu.SetSections("8")
+            ;GMenu.SetKey("mbutton")
+            GMenu.SetKeySpecial("Ctrl")
+            GMenu.Add("Open Obsidian", "Images\obsidianIcon.png", 1)
+            GMenu.Add2("Open Obsidian and", "Images\andIcon.png", 1)
+            ;GMenu.Add2("Open AltApp #2", "", 2)
+            GMenu.Add("Open Discord", "Images\discordIcon.png", 2)
+            GMenu.Add2("Open Discord and", "Images\andIcon.png", 2)
+            GMenu.Add("Open Google Chrome", "Images\googleChromeIcon.png", 3)
+            GMenu.Add2("Open Google Chrome and", "Images\andIcon.png", 3)
+            GMenu.Add("Open Visual Studio Code", "Images\vsCodeIcon.png", 4)
+            GMenu.Add2("Open Visual Studio Code and", "Images\andIcon.png", 4)
+            GMenu.Add("", "", 5)
+            GMenu.Add("Back", "Images\backIcon.png", 6)
+            GMenu.Add("", "", 7)
+            GMenu.Add("Open Eagle", "Images\eagleIcon.png", 8)
+            GMenu.Add("Open Eagle and", "Images\andIcon.png", 8)
+            GMenu.ResetRadialAlpha()
+            Return openResult := GMenu.Show()
+        }
+        ;#endregion
+;#region googleChromeRadial
 CreateGoogleChromeRadial(*) {
     GMenu := Radial_Menu()
-    GMenu.SetSections("6")
+    GMenu.SetSections("5")
     GMenu.SetKeySpecial("Ctrl")
-    GMenu.Add("Open New Tab", "Images\NewTabIcon.png", 1)
-    GMenu.Add2("Close Tab", "Images\CloseTab.png", 1)
-    GMenu.Add("Reopen last", "Images\reopenTabIcon.png", 2)
-    GMenu.Add("Search All Open Tabs", "Images\searchIcon.png", 3)
-    GMenu.Add("Refresh", "Images/RefreshIcon.png", 4)
+    GMenu.Add("Search All Open Tabs", "Images\searchIcon.png", 1)
+    GMenu.Add("Open New Tab", "Images\NewTabIcon.png", 2)
+    GMenu.Add2("Reopen last", "Images\reopenTabIcon.png", 2)
+    GMenu.Add("Close Tab", "Images\CloseTab.png", 3)
+    GMenu.Add2("Refresh", "Images/RefreshIcon.png", 3)
     ;GMenu.Add2("Save5se", "Images/fbcp_asm_image.gif", 4)
     ;GMenu.Add("Save6", "Images/smt_flat_wall_mt.gif", 5)
     ;GMenu.Add("Save8", "Images/smt_flat_wall_mt.gif", 6)
+    GMenu.Add("Address Bar", "Images\searchIcon.png", 4)
+    GMenu.Add2("Find", "Images\searchIcon.png", 4)
     GMenu.Add("Back", "Images\backIcon.png", 5)
-    GMenu.Add("Address Bar", "Images\searchIcon.png", 6)
-    GMenu.Add2("Find", "Images\searchIcon.png", 6)
     GMenu.ResetRadialAlpha()
     Return Result := GMenu.Show()
 }
@@ -354,7 +436,7 @@ OpenGoogleChrome(*) {
     }
 }
 ;#endregion
-;#region Discord stuffies
+;#region DiscordRadial
 CreateDiscordRadial(*) {
     GMenu := Radial_Menu()
     GMenu.SetSections("6")
@@ -395,10 +477,10 @@ OpenDiscord(*) {
     }
 }
 ;#endregion
-;#region VsCode stuffies
+;#region VsCodeRadial
 CreateVsCodeRadial(*) {
     GMenu := Radial_Menu()
-    GMenu.SetSections("7")
+    GMenu.SetSections("8")
     GMenu.SetKeySpecial("Ctrl")
     GMenu.Add("Command Pallette", "Images\pallette.png", 1)
     GMenu.Add2("Quick Open", "Images/bookIcon.png", 1)
@@ -410,14 +492,15 @@ CreateVsCodeRadial(*) {
     GMenu.Add2("Replace", "Images\RefreshIcon.png", 5)
     GMenu.Add("Back", "Images\backIcon.png", 6)
     GMenu.Add2("Close", "Images\close.png", 6)
-    GMenu.Add("Copy Line Down", "Images\downIcon.png", 7)
-    GMenu.Add2("Copy Line Up", "Images\upIcon.png", 7)
+    GMenu.Add("", "", 7)
+    GMenu.Add("Copy Line Down", "Images\downIcon.png", 8)
+    GMenu.Add2("Copy Line Up", "Images\upIcon.png", 8)
     GMenu.ResetRadialAlpha()
     Return Result := GMenu.Show()
 }
 VsCodeHotkeys() {
-    VsCodeResult := CreateVsCodeRadial()
-    switch VsCodeResult
+    ObsidianResult := CreateVsCodeRadial()
+    switch ObsidianResult
     {
         case "Command Pallette": SendInput("{Ctrl Down}{Shift Down}p{Ctrl Up}{Shift Up}")
         case "Quick Open": SendInput("{Ctrl Down}p{Ctrl Up}")
@@ -431,7 +514,7 @@ VsCodeHotkeys() {
         case "Copy Line Up": SendInput("{Shift Down}{Alt Down}{up}{Shift Up}{Alt Up}")
         case "Back": OpenBaseRadial()
         case "Close":
-        default: MsgBox(VsCodeResult)
+        default: MsgBox(ObsidianResult)
     }
 }
 OpenVScode(*) {
@@ -444,7 +527,7 @@ OpenVScode(*) {
 }
 CreateVsCodePluginsRadial(*) {
     GMenu := Radial_Menu()
-    GMenu.SetSections("7")
+    GMenu.SetSections("8")
     GMenu.SetKeySpecial("Ctrl")
     GMenu.Add("Toggle Bookmarks", "Images\bookmarkIcon.png", 1)
     GMenu.Add2("Clear Bookmarks", "", 1)
@@ -456,13 +539,13 @@ CreateVsCodePluginsRadial(*) {
     GMenu.Add("Back", "Images\backIcon.png", 6)
     GMenu.Add2("", "", 7)
     GMenu.Add("", "", 7)
-    GMenu.Add("", "", 7)
+    GMenu.Add("", "", 8)
     GMenu.ResetRadialAlpha()
     Return Result := GMenu.Show()
 }
 VsCodePluginsHotkeys() {
-    VsCodeResult := CreateVsCodePluginsRadial()
-    switch VsCodeResult
+    ObsidianResult := CreateVsCodePluginsRadial()
+    switch ObsidianResult
     {
         case "Toggle Bookmarks": SendInput("{Ctrl Down}{Alt Down}k{Ctrl Up}{Alt Up}")
         case "Clear Bookmarks": ClearBookmarks()
@@ -470,7 +553,7 @@ VsCodePluginsHotkeys() {
         case "Prev Bookmark":SendInput("{Ctrl Down}{Alt Down}j{Ctrl Up}{Alt Up}")
         case "Back": OpenBaseRadial()
         case "Close":
-        default: MsgBox(VsCodeResult)
+        default: MsgBox(ObsidianResult)
     }
     ClearBookmarks() {
         SendInput("{Ctrl Down}{delete Down}{Ctrl Up}")
@@ -479,19 +562,18 @@ VsCodePluginsHotkeys() {
     }
 }
 ;#endregion
-;#region Obsidian stuffies
+;#region ObsidianRadial
 CreateObsidianRadial(*) {
     GMenu := Radial_Menu()
-    GMenu.SetSections("6")
+    GMenu.SetSections("5")
     GMenu.SetKeySpecial("Ctrl")
-    GMenu.Add("Open Daily Note", "Images\NewTabIcon.png", 1)
-    GMenu.Add2("Open Tomorrows Daily Note", "Images/bookIcon.png", 1)
-    GMenu.Add("Pallette", "Images\pallette.png", 2)
-    GMenu.Add("Show Todays Day Planner", "Images\commentIcon.png", 3)
-    GMenu.Add2("Show Timeline", "Images\commentIcon.png", 3)
-    GMenu.Add("Show References", "Images\deafenIcon.png", 4)
-    GMenu.Add("Find", "Images\searchIcon.png", 5)
-    GMenu.Add("Back", "Images\backIcon.png", 6)
+    GMenu.Add("Pallette", "Images\pallette.png", 1)
+    GMenu.Add("Insert Callout", "Images\deafenIcon.png", 2)
+    GMenu.Add2("Toggle Checkboxes", "Images\deafenIcon.png", 2)
+    GMenu.Add("Open Daily Note", "Images\NewTabIcon.png", 3)
+    GMenu.Add2("Open Tomorrows Daily Note", "Images/bookIcon.png", 3)
+    GMenu.Add("Find", "Images\searchIcon.png", 4)
+    GMenu.Add("Back", "Images\backIcon.png", 5)
     GMenu.ResetRadialAlpha()
     Return Result := GMenu.Show()
 }
@@ -502,29 +584,73 @@ ObsidianHotkeys() {
         case "Open Daily Note": SendInput("{Ctrl Down}{F1}{Ctrl Up}")
         case "Open Tomorrows Daily Note": SendInput("{Ctrl Down}{Shift Down}{F1}{Ctrl Up}{Shift Up}")
         case "Pallette": SendInput("{Ctrl Down}p{Ctrl Up}")
-        case "Show Todays Day Planner": SendInput("{Shift Down}{Alt Down}{Ctrl Down}p{Shift Up}{Alt Up}{Ctrl Up}")
-        case "Show Timeline": SendInput("{Shift Down}{Alt Down}{Ctrl Down}t{Shift Up}{Alt Up}{Ctrl Up}")
         case "Find": SendInput("{Ctrl Down}f{Ctrl Up}")
-        case "Show References": SendInput("{Shift Down}{F12}{Shift Up}")
+        case "Insert Callout": SendInput("{Ctrl Down}{Shift Down}{F2}{Shift Up}{Ctrl Up}")
+        case "Toggle Checkboxes": SendInput("{Ctrl Down}l{Ctrl Up}")
         case "Back": OpenBaseRadial()
         default: MsgBox(ObsidianResult)
     }
 }
-OpenObsidian(*) {
+CreateObsidianPluginsRadial(*) {
+    GMenu := Radial_Menu()
+    GMenu.SetSections("8")
+    GMenu.SetKeySpecial("Ctrl")
+    GMenu.Add("", "", 1)
+    GMenu.Add2("", "", 1)
+    GMenu.Add("", "", 2)
+    GMenu.Add2("", "", 2)
+    GMenu.Add("", "", 3)
+    GMenu.Add2("", "", 3)
+    GMenu.Add("Show Todays Day Planner", "Images\commentIcon.png", 4)
+    GMenu.Add2("Show Timeline", "Images\commentIcon.png", 4)
+    GMenu.Add("", "", 5)
+    GMenu.Add2("", "", 5)
+    GMenu.Add("Back", "Images\backIcon.png", 6)
+    GMenu.Add("", "", 7)
+    GMenu.Add("", "", 8)
+    GMenu.Add2("", "", 8)
+    GMenu.ResetRadialAlpha()
+    Return Result := GMenu.Show()
+}
+ObsidianPluginsHotkeys(*) {
+    ObsidianResult := CreateObsidianPluginsRadial()
+    switch ObsidianResult
+    {
+        case "Back": OpenBaseRadial()
+        case "Show Todays Day Planner": SendInput("{Shift Down}{Alt Down}{Ctrl Down}p{Shift Up}{Alt Up}{Ctrl Up}")
+        case "Show Timeline": SendInput("{Shift Down}{Alt Down}{Ctrl Down}t{Shift Up}{Alt Up}{Ctrl Up}")
+        case "Close":
+        default: MsgBox(ObsidianResult)
+    }
+}
+OpenObsidian(isAnd) {
     if (ProcessExist("Obsidian.exe")) {
-        WinActivate("ahk_exe Obsidian.exe")
+        if (!isAnd) {
+            WinActivate("ahk_exe Obsidian.exe")
+        }else {
+            WinActivate("ahk_exe Obsidian.exe")
+            if(WinWaitActive("ahk_exe Obsidian.exe")){
+                ObsidianHotkeys()
+            }
+        }
     }
     else {
         Run("C:\Users\Jamie\AppData\Local\Obsidian\Obsidian.exe")    ;open from file path
     }
 }
 ;#endregion
-
-;#region Eagle stuffies
+;#region EagleRadial
 /* eagle doesn't have any extra functions since we haven't made a context menu for it*/
-OpenEagle(*) {
+OpenEagle(isAnd) {
     if (ProcessExist("Eagle.exe")) {
-        WinActivate("ahk_exe Eagle.exe")
+        if (!isAnd) {
+            WinActivate("ahk_exe Eagle.exe")            
+        }else {
+            WinActivate("ahk_exe Eagle.exe")
+            if (WinWaitActive("ahk_exe Eagle.exe")) {
+                ;open command pallette
+            }
+        }
     }
     else {
         Run("H:\Program Files (x86)\Eagle\Eagle.exe")    ;open from file path
@@ -551,15 +677,18 @@ Class Radial_Menu {
         This.ShowSfxPath := "sfx\219069__annabloom__click1.wav"
         This.RadialAlpha := 255
     }
+    ;This is exactly what it looks like just a function to pass data into the class
     ResetRadialAlpha() {
         This.RadialAlpha := 0
     }
+    ;This is exactly what it looks like just a function to pass data into the class
     SetRadialColors(ColorBackGround, ColorLineBackGround, ColorSelected, ColorLineSelected) {
         This.ColorBackGround := ColorBackGround
         This.ColorLineBackGround := ColorLineBackGround
         This.ColorSelected := ColorSelected
         This.ColorLineSelected := ColorLineSelected
     }
+    ;This is exactly what it looks like just a function to pass data into the class
     SetShowClick(ShowSfxPath) {
         This.ShowSfxPath := ShowSfxPath
     }
@@ -625,7 +754,9 @@ Class Radial_Menu {
         Y_Gui := PosY - R_3
         ;X_Gui := PosX - R_3 + X_Win
         ;Y_Gui := PosY - R_3 + Y_Win
-        Height_Gui := R_3 * 2
+        outerRadialSizeMult := 2
+        ;this is not the limiting factor to us drawing bigger though it is one
+        Height_Gui := R_3 * 2 * outerRadialSizeMult 
         Width_Gui := R_3 * 2
         Width := R_3 * 2
         height := R_3 * 2
@@ -686,7 +817,8 @@ Class Radial_Menu {
             This.Sect.%A_Index%.X_Bitmap := R_3 + (outer_Radius-20) * cos(SectionAngle) - 8
             This.Sect.%A_Index%.Y_Bitmap := R_3 + (outer_Radius-20) * sin(SectionAngle) - 8
 
-            This.Sect.%A_Index%.PointsA := Gdip_GetPointsSection(R_3, R_3, outer_Radius + Offset * 2 + 10, outer_Radius + Offset * 2, This.Sections, Offset, A_Index)
+            This.Sect.%A_Index%.PointsOuterRadial := Gdip_GetPointsSection(R_3, R_3,outer_Radius * 2, outer_Radius + Offset * 2 + 10, This.Sections, Offset, A_Index)
+            This.Sect.%A_Index%.PointsOutline := Gdip_GetPointsSection(R_3, R_3, outer_Radius + Offset * 2 + 10, outer_Radius + Offset * 2, This.Sections, Offset, A_Index)
             This.Sect.%A_Index%.Points := Gdip_GetPointsSection(R_3, R_3, outer_Radius, inner_Radius, This.Sections, Offset, A_Index)
         }
 
@@ -706,7 +838,8 @@ Class Radial_Menu {
         Section_Mouse_Prev := -1
         X_Mouse_P := -1
         Y_Mouse_P := -1
-        Gdip_FillEllipse(G, pBrushC, R_3 - outer_Radius, R_3 - outer_Radius, 2 * outer_Radius, 2 * outer_Radius)
+        ;no idea what this does uncommented 2/14/2023
+        ;Gdip_FillEllipse(G, pBrushC, R_3 - outer_Radius, R_3 - outer_Radius, 2 * outer_Radius, 2 * outer_Radius)
         loop {
             RM_KeyState := GetKeyState(This.RM_Key, "P")
             RM_KeyState2 := GetKeyState(This.RM_Key2, "P")
@@ -789,7 +922,8 @@ Class Radial_Menu {
 
                 ; Set the smoothing mode to antialias = 4 to make shapes appear smother (only used for vector drawing and filling)
                 Gdip_SetSmoothingMode(G, 4)
-                Gdip_FillEllipse(G, pBrushC, R_3 - outer_Radius, R_3 - outer_Radius, 2 * outer_Radius, 2 * outer_Radius)
+                ;no idea what this does uncommented 2/14/2023
+                ;Gdip_FillEllipse(G, pBrushC, R_3 - outer_Radius, R_3 - outer_Radius, 2 * outer_Radius, 2 * outer_Radius)
 
                 loop This.Sections {
                     Section := This.Sect.%A_Index%
@@ -797,11 +931,16 @@ Class Radial_Menu {
                     if (Section.Name = "") {
                         continue
                     }
+                    ;draw selected stuff
                     If (A_Index = Section_Mouse) {
                         Gdip_FillPolygon(G, pBrushA, Section.Points)
                         Gdip_DrawLines(G, pPenA, Section.Points)
-                        Gdip_FillPolygon(G, pBrushA, Section.PointsA)
-                        Gdip_DrawLines(G, pPenA, Section.PointsA)
+                        Gdip_FillPolygon(G, pBrushA, Section.PointsOutline)
+                        Gdip_DrawLines(G, pPenA, Section.PointsOutline)
+                        ;outer radial
+                        ;Gdip_FillPolygon(G,pBrush,Section.PointsOuterRadial)
+                        ;Gdip_DrawLines(G,pPen,Section.PointsOuterRadial)
+                        ;draw other stuff
                     } else {
                         Gdip_FillPolygon(G, pBrush, Section.Points)
                         Gdip_DrawLines(G, pPen, Section.Points)
@@ -819,16 +958,17 @@ Class Radial_Menu {
                 ; So this will position our gui at (0,0) with the Width and Height specified earlier
                 ;figured out alpha but now we need to find out how to make it only fade in
                 if (This.RadialAlpha != 255) {
+                    BlockInput("MouseMove")
                     loop 255 {
-                        Section_Mouse := RM_GetSection(This.Sections, inner_Radius, PosX, PosY)
                         UpdateLayeredWindow(hwnd1, hdc, X_Gui, Y_Gui, Width, Height, This.RadialAlpha)
                         This.RadialAlpha++
-                        if (mod(This.RadialAlpha, 8) = 0) {
+                        
+                        if (mod(This.RadialAlpha, 20) = 0) {
                             Sleep(1)
                         }
-
                     }
                 }
+                BlockInput("MouseMoveOff")
                 UpdateLayeredWindow(hwnd1, hdc, X_Gui, Y_Gui, Width, Height)
                 SelectObject(hdc, obm)    ; Select the object back into the hdc
                 DeleteObject(hbm)    ; Now the bitmap may be deleted
