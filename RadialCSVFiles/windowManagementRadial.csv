@@ -1,0 +1,14 @@
+,,add,1
+,,add2,1
+,,add,2
+,,add2,2
+Center Window,,add,3
+,,add2,3
+Grow Window,Images\toggleMaximize.png,add,4
+Shrink Window,Images\toggleMaximize.png,add2,4
+Move Active Window To Left,Images\leftArrowIcon.png,add,5
+Move Active Window To Right,Images/rightArrowIcon.png,add2,5
+Back,Images\backIcon.png,add,6
+,,add,7
+,,add,8
+,,add2,8

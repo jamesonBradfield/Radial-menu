@@ -1,19 +1,20 @@
 ; This scripts creates a radial menu / pie menu
 ; The selected menu item is returned as a string.
 ; mbutton is used in this example to trigger the menu
-
 #SingleInstance Force
 #Requires AutoHotkey v2.0-beta.3
-;#NoEnv
-
 ; Uncomment if Gdip.ahk is not in your standard library
 #Include Gdip_All.ahk
+
+
+;#region variableDeclaration
 PosX := 0
 PosY := 0
 ReturnColor := 0x00FF00
 InsertTextLastInputValue := ""
 activeWindowOnRadialOpen := ""
-; defColor := Array()
+;#endregion
+
 ;#region InputSection
 insertTextGui := Gui()
 insertTextGui.Add("Text", , "Which Text would you like to insert")
@@ -49,18 +50,18 @@ InsertTextAtSelection(*) {
 ^XButton1:: Reload
 #mButton::
 {
-    ClickPosition()
+    GetMousePosition()
     OpenWindowManagementRadial()
 }
 
 +mButton::
 {
-    ClickPosition()
+    GetMousePosition()
     OpenAppRadial()
 }
 !mButton::
 {
-    ClickPosition()
+    GetMousePosition()
     CheckContext("Context Menu")
 }
 mButton::
@@ -80,7 +81,7 @@ mButton::
     ;     }
     ; }
     ; FileAppend("","colors.txt")
-    ClickPosition()
+    GetMousePosition()
     OpenBaseRadial()
 }
 ; str2hex(str){
@@ -88,7 +89,7 @@ mButton::
 ; 	    hex .= Format("{:x}", Ord(A_LoopField))
 ; 	return hex
 ; }
-ClickPosition(*)
+GetMousePosition(*)
 {
     global PosX, PosY
     CoordMode("Mouse", "Screen")
@@ -147,7 +148,7 @@ CreateBaseRadial(*) {
 OpenSettingsMenu(*) {
     global PosX, PosY
     MouseMove(PosX, PosY, 0)
-    Result := CreateSettingsRadial()
+    Result := CreateRadialFromFile("RadialCSVFiles\settingsRadial.csv")
     switch Result
     {
         case "Color Menu": OpenColorMenu()
@@ -155,32 +156,6 @@ OpenSettingsMenu(*) {
         default:
             MsgBox(Result)
     }
-}
-CreateSettingsRadial(*){
-    GMenu := Radial_Menu()
-    GMenu.SetRadialColors("2B3D55","334966","121922","000000")
-    GMenu.SetSections("8")
-    ;when this key is pressed the radial section will move to its second "Option" Syntax below
-    GMenu.SetKeySpecial("Ctrl")
-    ;RadialMenuName.Add2("OnSelectString", "SectionIcon", sectionNumber)
-    
-    ;GMenu.Add("", "", 1)
-    ;GMenu.Add("", "", 2)
-    ;GMenu.Add2("", "", 2)
-    GMenu.Add("Color Menu", "Images/pallette.png", 1)
-    GMenu.Add("", "", 2)
-    GMenu.Add2("", "", 2)
-    GMenu.Add("", "", 3)
-    ;GMenu.Add2("", "Images/fbcp_asm_image.gif", 5)
-    ;GMenu.Add("", "", 6)
-    GMenu.Add("", "", 4)
-    GMenu.Add("", "", 5)
-    GMenu.Add("", "", 6)
-    GMenu.Add("", "", 7)
-    GMenu.Add("", "", 8)
-    GMenu.ResetRadialAlpha()
-    ;GMenu.Add("", "", 8)
-    Return Result := GMenu.Show()
 }
 
 ;#region colorSelect
@@ -284,37 +259,22 @@ ColorSelect(Color := 0, hwnd := 0, &custColorObj := "",disp:=false) {
 OpenWindowManagementRadial(*) {
     global PosX, PosY
     MouseMove(PosX, PosY)
-    openResult := CreateWindowManagementRadial()
+    openResult := CreateRadialFromFile("RadialCSVFiles\windowManagementRadial.csv")
     switch openResult
     {
         case "Move Active Window To Left": SendInput("#{left}")
         case "Move Active Window To Right": SendInput("#{right}")
         case "Grow Window":SendInput("#{up}")
-        case "Shrink Window":SendInput("#{up}")
-        case "Open Google Chrome":
-            case "Open Visual Studio Code":
-                case "Back": OpenBaseRadial()
+        case "Shrink Window": SendInput("#{up}")
+        case "Center Window": CenterWindow(WinGetID("A"))
+        case "Back": OpenBaseRadial()
         default: MsgBox(openResult)
     }
 }
-CreateWindowManagementRadial(){
-    GMenu := Radial_Menu()
-    GMenu.SetSections("8")
-    GMenu.SetKeySpecial("Ctrl")
-    GMenu.Add("", "", 1)
-    GMenu.Add("", "", 2)
-    GMenu.Add("", "", 3)
-    GMenu.Add("Grow Window", "Images\toggleMaximize.png", 4)
-    GMenu.Add2("Shrink Window", "Images\toggleMaximize.png", 4)
-    GMenu.Add("Move Active Window To Left", "Images\leftArrowIcon.png", 5)
-    GMenu.Add2("Move Active Window To Right", "Images/rightArrowIcon.png", 5)
-    GMenu.Add("Back", "Images\backIcon.png", 6)
-    GMenu.Add2("", "", 6)
-    GMenu.Add("", "", 7)
-    GMenu.Add2("", "", 7)
-    GMenu.Add("", "", 8)
-    GMenu.ResetRadialAlpha()
-    Return Result := GMenu.Show()
+CenterWindow(WinTitle)
+{
+    WinGetPos ,, &Width, &Height, WinTitle
+    WinMove (A_ScreenWidth/2)-(Width/2), (A_ScreenHeight/2)-(Height/2),,, WinTitle
 }
 ;#endregion
 ;#region ContextRadial
@@ -342,18 +302,52 @@ CreateContextMenu(WindowProcess,sectionCalledFrom) {
             case "ahk_exe Discord.exe":
             case "ahk_exe Obsidian.exe":ObsidianPluginsHotkeys()
             case "ahk_exe Eagle.exe":
-                case "ahk_exe Code.exe": VsCodePluginsHotkeys()
-                default:
-                
+            case "ahk_exe Code.exe": VsCodePluginsHotkeys()
+            default:
                 }
             }
         }
         ;#endregion
 ;#region appRadial
+        CreateRadialFromFile(fileName) {
+            items := []
+            loopCounter := 0
+            Loop read, fileName
+            {
+                line := StrSplit(A_LoopReadLine, ",")
+                if (line[3] = "add") {
+                    loopCounter++
+                }
+                items.InsertAt(A_Index, line)
+            }
+            return openResult := CreateRadialMenu(loopCounter, "mbutton", "Ctrl", items)
+        }
+        CreateRadialMenu(sections, key, keySpecial, items) {
+            GMenu := Radial_Menu()
+            GMenu.SetSections(sections)
+            if (key != "") {
+                GMenu.SetKey(key)                
+            }
+            if (keySpecial != "") {
+                GMenu.SetKeySpecial(keySpecial)                
+            }
+            Loop items.Length
+            {
+                item := items[A_Index]
+                if (item[3] = "add2") {
+                    GMenu.Add2(item[1], item[2], item[4])                    
+                }
+                else if (item[3] = "add") {
+                    GMenu.Add(item[1], item[2], item[4])                    
+                }
+            }
+            GMenu.ResetRadialAlpha()
+            return GMenu.Show()
+        }
         OpenAppRadial(*) {
             global PosX, PosY
             MouseMove(PosX, PosY)
-            openResult := CreateAppRadial()
+            openResult := CreateRadialFromFile("RadialCSVFiles\appRadial.csv")
             switch openResult
             {
                 case "Open Eagle": OpenEagle(0)
@@ -370,51 +364,10 @@ CreateContextMenu(WindowProcess,sectionCalledFrom) {
                 default: MsgBox(openResult)
             }
         }
-        ;this radial is made when the Open App section is chosen (and is used in the above function with a switch)
-        CreateAppRadial(*) {
-            GMenu := Radial_Menu()
-            GMenu.SetSections("8")
-            ;GMenu.SetKey("mbutton")
-            GMenu.SetKeySpecial("Ctrl")
-            GMenu.Add("Open Obsidian", "Images\obsidianIcon.png", 1)
-            GMenu.Add2("Open Obsidian and", "Images\andIcon.png", 1)
-            ;GMenu.Add2("Open AltApp #2", "", 2)
-            GMenu.Add("Open Discord", "Images\discordIcon.png", 2)
-            GMenu.Add2("Open Discord and", "Images\andIcon.png", 2)
-            GMenu.Add("Open Google Chrome", "Images\googleChromeIcon.png", 3)
-            GMenu.Add2("Open Google Chrome and", "Images\andIcon.png", 3)
-            GMenu.Add("Open Visual Studio Code", "Images\vsCodeIcon.png", 4)
-            GMenu.Add2("Open Visual Studio Code and", "Images\andIcon.png", 4)
-            GMenu.Add("", "", 5)
-            GMenu.Add("Back", "Images\backIcon.png", 6)
-            GMenu.Add("", "", 7)
-            GMenu.Add("Open Eagle", "Images\eagleIcon.png", 8)
-            GMenu.Add("Open Eagle and", "Images\andIcon.png", 8)
-            GMenu.ResetRadialAlpha()
-            Return openResult := GMenu.Show()
-        }
-        ;#endregion
+;#endregion
 ;#region googleChromeRadial
-CreateGoogleChromeRadial(*) {
-    GMenu := Radial_Menu()
-    GMenu.SetSections("5")
-    GMenu.SetKeySpecial("Ctrl")
-    GMenu.Add("Search All Open Tabs", "Images\searchIcon.png", 1)
-    GMenu.Add("Open New Tab", "Images\NewTabIcon.png", 2)
-    GMenu.Add2("Reopen last", "Images\reopenTabIcon.png", 2)
-    GMenu.Add("Close Tab", "Images\CloseTab.png", 3)
-    GMenu.Add2("Refresh", "Images/RefreshIcon.png", 3)
-    ;GMenu.Add2("Save5se", "Images/fbcp_asm_image.gif", 4)
-    ;GMenu.Add("Save6", "Images/smt_flat_wall_mt.gif", 5)
-    ;GMenu.Add("Save8", "Images/smt_flat_wall_mt.gif", 6)
-    GMenu.Add("Address Bar", "Images\searchIcon.png", 4)
-    GMenu.Add2("Find", "Images\searchIcon.png", 4)
-    GMenu.Add("Back", "Images\backIcon.png", 5)
-    GMenu.ResetRadialAlpha()
-    Return Result := GMenu.Show()
-}
 GoogleChromeHotkeys() {
-    googleChromeResult := CreateGoogleChromeRadial()
+    googleChromeResult := CreateRadialFromFile("RadialCSVFiles\googleChromeContextRadial.csv")
     switch googleChromeResult
     {
         case "Search All Open Tabs": SendInput("{Ctrl Down}{Shift Down}a{Ctrl Up}{Shift Up}")
