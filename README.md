@@ -5,22 +5,7 @@ It is pretty messy but it works for my use cases
 https://www.autohotkey.com/
 
 ### Heres the forum for where i got the radial menu
-https://www.autohotkey.com/boards/viewtopic.php?f=83&t=99651add this to the daily planner please
-> [!ToDo]- Windows hotkeys to add to radial menu (2nd Work TIME)
-> - [ ]   **Windows key** + **E** - Open File Explorer.
-> - [ ]   **Windows key** + **D** open Windows Explorer tab
-> - [ ]   **Windows key** + **Shift** + **S** - Take a screenshot using the Snip & Sketch. After pressing the keys, you can choose your preferred capture mode, including free form, rectangle, window, and full-screen (this includes all connected monitors).
-> - [ ] **PrtScn** - Take a full-screen screenshot and copy it to the clipboard, so you can paste it somewhere else without saving it as a file. You can also go to the Settings app > Accessibility > Keyboard to set the PrtScn key to open the Snipping Tool (making it the same as **Windows key** + **Shift** + **S**)
-> - [ ] **Windows key** + _**Tab**_ - Open Task View. This displays all your open apps as tiles so you can choose one to focus on. It also displays your virtual desktops and your timeline, including previously open apps and documents.
-
-> [!ToDo]- schoolToDo(do this first)
-> 
-> - [ ] [Quiz 7: Video, Audio, and Image Techniques](https://protect-us.mimecast.com/s/-aHkClYkq5cOo6qw4uVTMER?domain=forms.office.com)
-> - [ ] [Quiz 9: GUI HTML Editors and Mobile Websites](https://protect-us.mimecast.com/s/y6rRCmZ0rQU15kLo4u3Fkln?domain=forms.office.com)
-
-> [!ToDo]- Break Time
-> - [ ] Read agatha christie book(1 chapter) or(30 minutes)
-
+https://www.autohotkey.com/boards/viewtopic.php?f=83&t=99651
 
 
 # Radial-menu
